@@ -47,6 +47,17 @@ public class Board{
 
     }
 
+    // Checks whether a game has been won.
+    public boolean hasWon(byte player){
+
+        return this.hasWonVertical(player)      ||
+               this.hasWonHorizontal(player)    ||
+               this.hasWonLeftDiagonal(player)  ||
+               this.hasWonRightDiagonal(player) ;
+
+    }
+
+
     // --------------------------------- //
     // Print methods.
 
@@ -86,7 +97,6 @@ public class Board{
     // --------------------------------- //
     // Helper methods.
 
-
     // Takes in the byte value of a coin and returns its string representation.
     private String formatCoinColor(byte coin){
 
@@ -107,6 +117,72 @@ public class Board{
 
         this.board[getIndex(row, col)] = setTo;
 
+    }
+
+    // Checks whether a game has been won in a few different ways.
+    // TODO: eventually think about how to merge all these methods into just one loop.
+    private boolean hasWonHorizontal(byte player){
+
+        for(int row = 0; row < this.height; row++)
+            for (int col = 3; col < this.width; col++) {
+
+                boolean victory = true;
+
+                for(int offset = 0; offset < 4; offset++)
+                    victory = victory && player == this.board[getIndex(row, col - offset)];
+
+                if(victory) return true;
+
+            }
+
+        return false;
+
+    }
+    private boolean hasWonVertical(byte player){
+
+        for(int row = 3; row < this.height; row++){
+            for(int col = 0; col < this.width; col++){
+
+                boolean victory = true;
+
+                for(int offset = 0; offset < 4; offset++)
+                    victory = victory && player == this.board[getIndex(row - offset, col)];
+
+                if(victory) return true;
+
+            }
+        }
+        return false;
+    }
+    private boolean hasWonRightDiagonal(byte player){
+
+        for(int row = 3; row < this.height; row++) {
+            for (int col = 3; col < this.width; col++) {
+
+                boolean victory = true;
+
+                for(int offset = 0; offset < 4; offset++)
+                    victory = victory && player == this.board[getIndex(row - offset, col - offset)];
+
+                if(victory) return true;
+            }
+        }
+        return false;
+    }
+    private boolean hasWonLeftDiagonal(byte player){
+
+        for(int row = 3; row < this.height; row++) {
+            for (int col = this.width - 4; col >= 0; col--) {
+
+                boolean victory = true;
+
+                for(int offset = 0; offset < 4; offset++)
+                    victory = victory && player == this.board[getIndex(row - offset, col + offset)];
+
+                if(victory) return true;
+            }
+        }
+        return false;
     }
 
 

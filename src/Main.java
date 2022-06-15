@@ -19,12 +19,15 @@ public class Main {
         };
 
         Board b = new Board();
-        b.placeCoin(0, (byte) 1);
-        b.placeCoin(0, (byte) 2);
-        b.placeCoin(0, (byte) 3);
-        b.placeCoin(0, (byte) 4);
-        b.placeCoin(1, (byte) 5);
+
+        b.setValue(0, 0, (byte) 1);
+        b.setValue(1, 1, (byte) 1);
+        b.setValue(2, 2, (byte) 1);
+        b.setValue(3, 3, (byte) 1);
+
         b.print();
+
+        System.out.println(b.hasWon((byte) 1));
 
     }
 
