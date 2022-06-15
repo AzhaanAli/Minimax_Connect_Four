@@ -3,9 +3,10 @@ public class Board{
     // --------------------------------- //
     // Instance variables.
 
-    private static final String ANSI_RED = "\u001B[31m";
-    private static final String ANSI_YELLOW = "\u001b[33;1m";
     private static final String ANSI_RESET = "\u001B[0m";
+    private static final String[] PLAYER_COLORS = new String[]{
+            "\u001B[31m", "\u001b[33m", "\u001b[32m", "\u001B[35m", "\u001b[36m",
+    };
 
     // Where coin data is stored.
     public byte[] board;
@@ -23,12 +24,28 @@ public class Board{
     }
     public Board(int height, int width) {
 
-        this.height = height;
-        this.width = width;
-        this.board = new byte[height * width];
+        // Make sure dimensions are each larger than 4, and width is limited to 10.
+        this.height = Math.max(height, 4);
+        this.width  = Math.max(Math.min(width, 10), 4);
+        this.board  = new byte[this.height * this.width];
 
     }
 
+
+    // --------------------------------- //
+    // Game methods.
+
+    // Places a coin at the first available spot.
+    public void placeCoin(int col, byte player){
+
+        for(int row = 0; row < this.height; row++)
+            if(this.board[getIndex(row, col)] == 0)
+            {
+                this.board[getIndex(row, col)] = player;
+                return;
+            }
+
+    }
 
     // --------------------------------- //
     // Print methods.
@@ -73,13 +90,8 @@ public class Board{
     // Takes in the byte value of a coin and returns its string representation.
     private String formatCoinColor(byte coin){
 
-        return switch(coin){
-            case 0 -> "•";
-            case 1 -> ANSI_RED    + "○" + ANSI_RESET;
-            case 2 -> ANSI_YELLOW + "○" + ANSI_RESET;
-
-            default -> throw new IllegalStateException("Unexpected value: " + coin);
-        };
+        if(coin == 0) return "•";
+        return PLAYER_COLORS[coin - 1] + "○" + ANSI_RESET;
 
     }
 
