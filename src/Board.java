@@ -1,3 +1,5 @@
+import java.util.Scanner;
+
 public class Board{
 
     // --------------------------------- //
@@ -10,8 +12,10 @@ public class Board{
 
     // Where coin data is stored.
     public byte[] board;
-    private final int height;
-    private final int width;
+    public final int HEIGHT;
+    public final int WIDTH;
+
+    private final Scanner SC = new Scanner(System.in);
 
 
     // --------------------------------- //
@@ -25,9 +29,9 @@ public class Board{
     public Board(int height, int width) {
 
         // Make sure dimensions are each larger than 4, and width is limited to 10.
-        this.height = Math.max(height, 4);
-        this.width  = Math.max(Math.min(width, 10), 4);
-        this.board  = new byte[this.height * this.width];
+        this.HEIGHT = Math.max(height, 4);
+        this.WIDTH = Math.max(Math.min(width, 10), 4);
+        this.board  = new byte[this.HEIGHT * this.WIDTH];
 
     }
 
@@ -35,10 +39,26 @@ public class Board{
     // --------------------------------- //
     // Game methods.
 
+    // Prompts a user to make a turn.
+    public void promptUserTurn(){
+
+        String choice = "";
+        int col = -1;
+        while(!this.colIsOpen(col))
+        {
+            System.out.print("Choose a valid colum: ");
+            choice = SC.nextLine();
+            col = Integer.parseInt(choice) - 1;
+        }
+        this.placeCoin(col, (byte) 1);
+
+
+    }
+
     // Places a coin at the first available spot.
     public void placeCoin(int col, byte player){
 
-        for(int row = 0; row < this.height; row++)
+        for(int row = 0; row < this.HEIGHT; row++)
             if(this.board[getIndex(row, col)] == 0)
             {
                 this.board[getIndex(row, col)] = player;
@@ -48,12 +68,12 @@ public class Board{
     }
 
     // Checks whether a game has been won.
-    public boolean hasWon(byte player){
+    public boolean hasWon(){
 
-        return this.hasWonVertical(player)      ||
-               this.hasWonHorizontal(player)    ||
-               this.hasWonLeftDiagonal(player)  ||
-               this.hasWonRightDiagonal(player) ;
+        return this.hasWonVertical()      ||
+               this.hasWonHorizontal()    ||
+               this.hasWonLeftDiagonal()  ||
+               this.hasWonRightDiagonal() ;
 
     }
 
@@ -65,8 +85,8 @@ public class Board{
     public  void print(){
 
         printBar();
-        for(int i = this.height - 1; i >= 0; i--) {
-            for (int j = 0; j < this.width; j++) {
+        for(int i = this.HEIGHT - 1; i >= 0; i--) {
+            for (int j = 0; j < this.WIDTH; j++) {
                 System.out.print(" " + formatCoinColor(this.board[getIndex(i, j)]) + " ");
             }
             System.out.println();
@@ -82,13 +102,13 @@ public class Board{
         // = x + 2x - 2 + 2
         // = 3x
         // Amount of bars is three times the board's width.
-        System.out.println("_".repeat(Math.max(0, 3 * this.width)));
+        System.out.println("_".repeat(Math.max(0, 3 * this.WIDTH)));
 
     }
     private void printColNumbers(){
 
         StringBuilder numbers = new StringBuilder(" ");
-        for(int i = 1; i <= this.width; i++) numbers.append(i).append("  ");
+        for(int i = 1; i <= this.WIDTH; i++) numbers.append(i).append("  ");
         System.out.println(numbers);
 
     }
@@ -108,7 +128,7 @@ public class Board{
     // Converts a (row, col) position on the board to an index for the byte array.
     public int getIndex(int row, int col){
 
-        return row * this.width + col;
+        return row * this.WIDTH + col;
 
     }
 
@@ -119,67 +139,87 @@ public class Board{
 
     }
 
+    // Returns whether a column can hold another coin.
+    public boolean colIsOpen(int col){
+
+        if(col > this.WIDTH - 1 || col < 0) return false;
+        return this.board[this.getIndex(this.HEIGHT - 1, col)] == 0;
+
+    }
+
     // Checks whether a game has been won in a few different ways.
     // TODO: eventually think about how to merge all these methods into just one loop.
-    private boolean hasWonHorizontal(byte player){
+    private boolean hasWonHorizontal(){
 
-        for(int row = 0; row < this.height; row++)
-            for (int col = 3; col < this.width; col++) {
+        for(int row = 0; row < this.HEIGHT; row++)
+            for (int col = 3; col < this.WIDTH; col++) {
 
                 boolean victory = true;
 
-                for(int offset = 0; offset < 4; offset++)
-                    victory = victory && player == this.board[getIndex(row, col - offset)];
-
-                if(victory) return true;
+                byte player = this.board[getIndex(row, col)];
+                if(player != 0)
+                {
+                    for (int offset = 1; offset < 4; offset++)
+                        victory = victory && player == this.board[getIndex(row, col - offset)];
+                    if (victory) return true;
+                }
 
             }
 
         return false;
 
     }
-    private boolean hasWonVertical(byte player){
+    private boolean hasWonVertical(){
 
-        for(int row = 3; row < this.height; row++){
-            for(int col = 0; col < this.width; col++){
-
-                boolean victory = true;
-
-                for(int offset = 0; offset < 4; offset++)
-                    victory = victory && player == this.board[getIndex(row - offset, col)];
-
-                if(victory) return true;
-
-            }
-        }
-        return false;
-    }
-    private boolean hasWonRightDiagonal(byte player){
-
-        for(int row = 3; row < this.height; row++) {
-            for (int col = 3; col < this.width; col++) {
+        for(int row = 3; row < this.HEIGHT; row++){
+            for(int col = 0; col < this.WIDTH; col++){
 
                 boolean victory = true;
 
-                for(int offset = 0; offset < 4; offset++)
-                    victory = victory && player == this.board[getIndex(row - offset, col - offset)];
-
-                if(victory) return true;
+                byte player = this.board[getIndex(row, col)];
+                if(player != 0)
+                {
+                    for (int offset = 1; offset < 4; offset++)
+                        victory = victory && player == this.board[getIndex(row - offset, col)];
+                    if (victory) return true;
+                }
             }
         }
         return false;
     }
-    private boolean hasWonLeftDiagonal(byte player){
+    private boolean hasWonRightDiagonal(){
 
-        for(int row = 3; row < this.height; row++) {
-            for (int col = this.width - 4; col >= 0; col--) {
+        for(int row = 3; row < this.HEIGHT; row++) {
+            for (int col = 3; col < this.WIDTH; col++) {
 
                 boolean victory = true;
 
-                for(int offset = 0; offset < 4; offset++)
-                    victory = victory && player == this.board[getIndex(row - offset, col + offset)];
+                byte player = this.board[getIndex(row, col)];
+                if(player != 0)
+                {
+                    for (int offset = 1; offset < 4; offset++)
+                        victory = victory && player == this.board[getIndex(row - offset, col - offset)];
+                    if (victory) return true;
+                }
+            }
+        }
+        return false;
+    }
+    private boolean hasWonLeftDiagonal(){
 
-                if(victory) return true;
+        for(int row = 3; row < this.HEIGHT; row++) {
+            for (int col = this.WIDTH - 4; col >= 0; col--) {
+
+                boolean victory = true;
+
+                byte player = this.board[getIndex(row, col)];
+                if(player != 0)
+                {
+                    for(int offset = 1; offset < 4; offset++)
+                        victory = victory && player == this.board[getIndex(row - offset, col + offset)];
+                    if(victory) return true;
+                }
+
             }
         }
         return false;
