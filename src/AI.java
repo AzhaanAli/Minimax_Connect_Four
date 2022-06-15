@@ -53,7 +53,7 @@ public class AI extends Board{
                 this.undoLastMove(col);
 
                 super.placeCoin(col, (byte) 2);
-                int loss = minimax(false, 11, Integer.MIN_VALUE, Integer.MAX_VALUE);
+                int loss = minimax(false, 9, Integer.MIN_VALUE, Integer.MAX_VALUE);
                 this.undoLastMove(col);
 
                 System.out.print(loss + " ");
@@ -77,7 +77,7 @@ public class AI extends Board{
     public int minimax(boolean aiTurn, int countDown, int alpha, int beta){
 
         if (super.hasWon() || countDown == 0) return this.evaluateBoard(aiTurn);
-        int minMax = aiTurn? Integer.MIN_VALUE : Integer.MAX_VALUE;
+        int minMax = aiTurn? Integer.MIN_VALUE + 1 : Integer.MAX_VALUE - 1;
         for(int col = 0; col < super.WIDTH; col++)
             if(super.colIsOpen(col))
             {
@@ -115,7 +115,10 @@ public class AI extends Board{
             score += (1 + zeroSum()) * 100;
         }
 
+        score += this.sumVertical();
         score += this.sumHorizontal();
+        score += this.sumLeftDiagonal();
+        score += this.sumRightDiagonal();
 
         if(aiTurn) score *= -1;
         return score;
@@ -132,68 +135,183 @@ public class AI extends Board{
 
     }
 
-    // TODO: TEST THIS METHOD.
-    private int countAdjacentHorizontal(){
 
-        int total = 0;
 
-        int streak = 0;
-        for(int row = 0; row < super.HEIGHT; row++)
-        {
-            for(int col = 0; col < super.WIDTH; col++){
-
-                int index = super.getIndex(row, col);
-                if(super.board[index] == 0)
-                {
-                    total += switch(streak) {
-                        case 2 -> 4;
-                        case 3 -> 10;
-                        default -> 0;
-                    };
-                    streak = 0;
-                }
-                else if(super.board[index] == 2)
-                {
-                    streak++;
-                }
-
-            }
-        }
-
-        return total;
-
-    }
-
+    // TODO: make switch case a method.
+    // TODO: combine all into one loop.
     public int sumHorizontal(){
 
         int totalPoints = 0;
-        for(int row = 0; row < this.HEIGHT; row++) {
-            int zeroCount = 0;
-            int twoCount  = 0;
-            for (int col = 3; col < this.WIDTH; col++) {
+        for(int row = 0; row < this.HEIGHT; row++)
+        {
+            StringBuilder identity = new StringBuilder();
+            for (int col = 3; col < this.WIDTH; col++)
+            {
 
                 for (int offset = 0; offset < 4; offset++)
-                    switch(this.board[getIndex(row, col - offset)]){
-                        case 0 -> zeroCount++;
-                        case 2 -> twoCount++;
-                    }
+                {
+                    identity.append(switch (this.board[getIndex(row, col - offset)]) {
+                        case 0 -> " ";
+                        case 2 -> "2";
+                        default -> "1";
+                    });
 
-            }
-
-            if (zeroCount == 1) {
-                switch(twoCount){
-                    case 2 -> totalPoints ++;
-                    case 3 -> totalPoints += 5;
                 }
+
             }
-            else if (zeroCount == 2) {
-                totalPoints += 2;
-            }
+
+            totalPoints += switch(identity.toString()){
+                default -> 0;
+
+                // Two cases.
+                case " 22 " -> 5;
+                case "22  " -> 2;
+                case "22 1" -> 1;
+                case "  22" -> 2;
+                case "1 22" -> 1;
+
+                // Three cases.
+                case "222 " -> 7;
+                case " 222" -> 7;
+                case "2 22" -> 7;
+                case "22 2" -> 7;
+
+            };
 
         }
         return totalPoints;
 
     }
+    public int sumVertical(){
+
+        int totalPoints = 0;
+        for(int row = 3; row < this.HEIGHT; row++)
+        {
+            StringBuilder identity = new StringBuilder();
+            for(int col = 0; col < this.WIDTH; col++)
+            {
+
+                for (int offset = 0; offset < 4; offset++)
+                {
+                    identity.append(switch (this.board[getIndex(row - offset, col)]) {
+                        case 0 -> " ";
+                        case 2 -> "2";
+                        default -> "1";
+                    });
+
+                }
+
+            }
+
+            totalPoints += switch(identity.toString()){
+                default -> 0;
+
+                // Two cases.
+                case " 22 " -> 5;
+                case "22  " -> 2;
+                case "22 1" -> 1;
+                case "  22" -> 2;
+                case "1 22" -> 1;
+
+                // Three cases.
+                case "222 " -> 7;
+                case " 222" -> 7;
+                case "2 22" -> 7;
+                case "22 2" -> 7;
+
+            };
+
+        }
+        return totalPoints;
+
+    }
+    public int sumRightDiagonal(){
+
+        int totalPoints = 0;
+        for(int row = 3; row < this.HEIGHT; row++)
+        {
+            StringBuilder identity = new StringBuilder();
+            for (int col = 3; col < this.WIDTH; col++)
+            {
+
+                for (int offset = 0; offset < 4; offset++)
+                {
+                    identity.append(switch (this.board[getIndex(row - offset, col - offset)]) {
+                        case 0 -> " ";
+                        case 2 -> "2";
+                        default -> "1";
+                    });
+
+                }
+
+            }
+
+            totalPoints += switch(identity.toString()){
+                default -> 0;
+
+                // Two cases.
+                case " 22 " -> 5;
+                case "22  " -> 2;
+                case "22 1" -> 1;
+                case "  22" -> 2;
+                case "1 22" -> 1;
+
+                // Three cases.
+                case "222 " -> 7;
+                case " 222" -> 7;
+                case "2 22" -> 7;
+                case "22 2" -> 7;
+
+            };
+
+        }
+        return totalPoints;
+
+    }
+    public int sumLeftDiagonal(){
+
+        int totalPoints = 0;
+        for(int row = 3; row < this.HEIGHT; row++)
+        {
+            StringBuilder identity = new StringBuilder();
+            for (int col = this.WIDTH - 4; col >= 0; col--)
+            {
+
+                for (int offset = 0; offset < 4; offset++)
+                {
+                    identity.append(switch (this.board[getIndex(row - offset, col + offset)]) {
+                        case 0 -> " ";
+                        case 2 -> "2";
+                        default -> "1";
+                    });
+
+                }
+
+            }
+
+            totalPoints += switch(identity.toString()){
+                default -> 0;
+
+                // Two cases.
+                case " 22 " -> 5;
+                case "22  " -> 2;
+                case "22 1" -> 1;
+                case "  22" -> 2;
+                case "1 22" -> 1;
+
+                // Three cases.
+                case "222 " -> 7;
+                case " 222" -> 7;
+                case "2 22" -> 7;
+                case "22 2" -> 7;
+
+            };
+
+        }
+        return totalPoints;
+
+    }
+
 
 
     // --------------------------------- //
