@@ -67,7 +67,8 @@ public class Board{
 
     }
 
-    // Checks whether a game has been won.
+    // Returns a boolean representing whether a game has ended.
+    // This method returns false if a game has ended in a draw.
     public boolean hasWon(){
 
         // Loops though every possible position on the board.
@@ -123,7 +124,7 @@ public class Board{
     // Print methods.
 
     // Prints out the byte board as you would expect a board of connect four to appear.
-    public  void print(){
+    public void print(){
 
         printBar();
         for(int i = this.HEIGHT - 1; i >= 0; i--) {
