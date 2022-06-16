@@ -1,3 +1,5 @@
+import java.util.Scanner;
+
 public class Main {
 
 
@@ -6,7 +8,7 @@ public class Main {
 
     public static void main(String[] args) {
 
-        startGame(11, 7);
+        gameLoop();
 
     }
 
@@ -49,7 +51,38 @@ public class Main {
         }
 
         if(ai.zeroSum() == 0) System.out.println("Game has ended in a draw.");
-        else System.out.println("\n" + (startFirst? "\u001b[32mAi" : "Player") + " has won!");
+        else System.out.println("\n" + (startFirst? "Ai" : "Player") + " has won!");
+
+    }
+
+    public static void gameLoop(){
+
+        Scanner s = new Scanner(System.in);
+
+        int height = 7;
+        int width = 7;
+
+//        try
+//        {
+//            System.out.print("ENTER BOARD HEIGHT: ");
+//            height = Integer.parseInt(s.nextLine());
+//            System.out.print("ENTER BOARD WIDTH:  ");
+//            width = Integer.parseInt(s.nextLine());
+//        }
+//        catch(Exception e)
+//        {
+//            System.out.println("Starting with default settings.");
+//            height = 6;
+//            width = 7;
+//        }
+
+        boolean keepPlaying = true;
+        while(keepPlaying)
+        {
+            startGame(height, width);
+            System.out.println("Would you like to play again? (\"NO\" to stop): ");
+            keepPlaying = !s.nextLine().equalsIgnoreCase("NO");
+        }
 
     }
 
