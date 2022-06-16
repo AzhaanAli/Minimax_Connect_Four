@@ -59,7 +59,7 @@ public class AI extends Board{
                 this.undoLastMove(col);
 
                 super.placeCoin(col, (byte) 2);
-                int loss = minimax(false, 8, Integer.MIN_VALUE, Integer.MAX_VALUE, zeros);
+                int loss = minimax(false, 8 + this.filledColumns(), Integer.MIN_VALUE, Integer.MAX_VALUE, zeros);
                 this.undoLastMove(col);
 
                 System.out.print(" " + loss);
@@ -93,6 +93,7 @@ public class AI extends Board{
                         alpha, beta,
                         zeros - 1
                 );
+
                 minMax = aiTurn?
                         Math.max(minMax, loss):
                         Math.min(minMax, loss);
@@ -260,6 +261,16 @@ public class AI extends Board{
 
         if(aiTurn) return playerPoints - aiPoints;
         else return aiPoints - playerPoints;
+
+    }
+
+    public int filledColumns(){
+
+        int total = 0;
+        for(int i = 0; i < super.WIDTH; i++)
+            if(!super.colIsOpen(i))
+                total++;
+        return total;
 
     }
 
