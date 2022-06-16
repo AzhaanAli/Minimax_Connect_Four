@@ -30,7 +30,7 @@ public class Board{
 
         // Make sure dimensions are each larger than 4, and width is limited to 10.
         this.HEIGHT = Math.max(height, 4);
-        this.WIDTH = Math.max(Math.min(width, 10), 4);
+        this.WIDTH = Math.max(width, 4);
         this.board  = new byte[this.HEIGHT * this.WIDTH];
 
     }
@@ -136,7 +136,7 @@ public class Board{
         printBar();
         for(int i = this.HEIGHT - 1; i >= 0; i--) {
             for (int j = 0; j < this.WIDTH; j++) {
-                System.out.print(" " + formatCoinColor(this.board[getIndex(i, j)]) + " ");
+                System.out.print(("\t" + formatCoinColor(this.board[getIndex(i, j)])));
             }
             System.out.println();
         }
@@ -146,18 +146,13 @@ public class Board{
     }
     private void printBar(){
 
-        // = Each number + Two spaces for every area between numbers + One at the start + One at the end
-        // = x + 2(x - 1) + 1 + 1
-        // = x + 2x - 2 + 2
-        // = 3x
-        // Amount of bars is three times the board's width.
-        System.out.println("_".repeat(Math.max(0, 3 * this.WIDTH)));
+        System.out.println("   " + "_".repeat(Math.max(0, 4 * this.WIDTH - 1)));
 
     }
     private void printColNumbers(){
 
-        StringBuilder numbers = new StringBuilder(" ");
-        for(int i = 1; i <= this.WIDTH; i++) numbers.append(i).append("  ");
+        StringBuilder numbers = new StringBuilder();
+        for(int i = 1; i <= this.WIDTH; i++) numbers.append("\t").append(i);
         System.out.println(numbers);
 
     }
