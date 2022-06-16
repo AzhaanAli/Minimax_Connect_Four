@@ -70,10 +70,51 @@ public class Board{
     // Checks whether a game has been won.
     public boolean hasWon(){
 
-        return this.hasWonVertical()      ||
-               this.hasWonHorizontal()    ||
-               this.hasWonLeftDiagonal()  ||
-               this.hasWonRightDiagonal() ;
+        // Loops though every possible position on the board.
+        // If it is possible for a win to extrude from that point, check whether there is a win.
+        // If there is a win, return true.
+        // If the loop completes, and there has been no win reported, then the game is still ongoing.
+        // If this is the case, return false.
+        for(int row = 0; row < this.HEIGHT; row++)
+            for (int col = 0; col < this.WIDTH; col++)
+            {
+
+                byte player = this.board[getIndex(row, col)];
+
+                // Test for horizontal wins.
+                boolean victory = true;
+                if (player != 0 && col >= 3) {
+                    for (int offset = 1; offset < 4; offset++)
+                        victory = victory && player == this.board[getIndex(row, col - offset)];
+                    if (victory) return true;
+                }
+
+                // Test for vertical wins.
+                victory = true;
+                if (player != 0 && row >= 3) {
+                    for (int offset = 1; offset < 4; offset++)
+                        victory = victory && player == this.board[getIndex(row - offset, col)];
+                    if (victory) return true;
+                }
+
+                // Test for right diagonal wins.
+                victory = true;
+                if (player != 0 && row >= 3 && col >= 3) {
+                    for (int offset = 1; offset < 4; offset++)
+                        victory = victory && player == this.board[getIndex(row - offset, col - offset)];
+                    if (victory) return true;
+                }
+
+                // Test for left diagonal wins.
+                victory = true;
+                if (player != 0 && row >= 3 && col <= this.WIDTH - 4) {
+                    for (int offset = 1; offset < 4; offset++)
+                        victory = victory && player == this.board[getIndex(row - offset, col + offset)];
+                    if (victory) return true;
+                }
+
+            }
+        return false;
 
     }
 
@@ -146,108 +187,6 @@ public class Board{
         return this.board[this.getIndex(this.HEIGHT - 1, col)] == 0;
 
     }
-
-    // Checks whether a game has been won in a few different ways.
-    // TODO: eventually think about how to merge all these methods into just one loop.
-    private boolean hasWonHorizontal(){
-
-        for(int row = 0; row < this.HEIGHT; row++)
-            for (int col = 3; col < this.WIDTH; col++) {
-
-                boolean victory = true;
-
-                byte player = this.board[getIndex(row, col)];
-                if(player != 0)
-                {
-                    for (int offset = 1; offset < 4; offset++)
-                        victory = victory && player == this.board[getIndex(row, col - offset)];
-                    if (victory) return true;
-                }
-
-            }
-
-        return false;
-
-    }
-    private boolean hasWonVertical(){
-
-        for(int row = 3; row < this.HEIGHT; row++){
-            for(int col = 0; col < this.WIDTH; col++){
-
-                boolean victory = true;
-
-                byte player = this.board[getIndex(row, col)];
-                if(player != 0)
-                {
-                    for (int offset = 1; offset < 4; offset++)
-                        victory = victory && player == this.board[getIndex(row - offset, col)];
-                    if (victory) return true;
-                }
-            }
-        }
-        return false;
-    }
-    private boolean hasWonRightDiagonal(){
-
-        for(int row = 3; row < this.HEIGHT; row++) {
-            for (int col = 3; col < this.WIDTH; col++) {
-
-                boolean victory = true;
-
-                byte player = this.board[getIndex(row, col)];
-                if(player != 0)
-                {
-                    for (int offset = 1; offset < 4; offset++)
-                        victory = victory && player == this.board[getIndex(row - offset, col - offset)];
-                    if (victory) return true;
-                }
-            }
-        }
-        return false;
-    }
-    private boolean hasWonLeftDiagonal(){
-
-        for(int row = 3; row < this.HEIGHT; row++) {
-            for (int col = this.WIDTH - 4; col >= 0; col--) {
-
-                boolean victory = true;
-
-                byte player = this.board[getIndex(row, col)];
-                if(player != 0)
-                {
-                    for(int offset = 1; offset < 4; offset++)
-                        victory = victory && player == this.board[getIndex(row - offset, col + offset)];
-                    if(victory) return true;
-                }
-
-            }
-        }
-        return false;
-    }
-
-//    private boolean hasWonGeneral(){
-//
-//        for(int row = 0; row < this.HEIGHT; row++)
-//        {
-//            for(int col = 0; col < this.WIDTH; col++)
-//            {
-//
-//                boolean victory = true;
-//
-//                // Horizontal test.
-//                byte player = this.board[getIndex(row, col)];
-//                if(player != 0)
-//                {
-//                    for (int offset = 1; offset < 4; offset++)
-//                        victory = victory && player == this.board[getIndex(row, col - offset)];
-//                    if (victory) return true;
-//                }
-//
-//
-//            }
-//        }
-//
-//    }
 
 
     // --------------------------------- //
