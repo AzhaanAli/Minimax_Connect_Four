@@ -1,5 +1,4 @@
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class AI extends Board{
 
@@ -18,7 +17,10 @@ public class AI extends Board{
     // Therefore, if there is a connection between the distribution of best moves and future best moves,
     // then this array can be used to prioritize checking certain columns before others,
     // pruning the decision-tree and resulting in much greater efficiency.
-    private int[] bestMoveDistribution;
+    private final int[] bestMoveDistribution;
+
+    // Gives the AI the ability to temporarily increase its computational depth when in danger.
+    private boolean emergencyComputations = false;
 
     // --------------------------------- //
     // Constructor.
@@ -58,35 +60,32 @@ public class AI extends Board{
 
         // Variables to note AI attitude.
         boolean willWin = false;
-        boolean defending = false;
         int averageLoss = 0;
         int lossCount = 0;
         int playerTraps = 0;
 
         // Count the amount of zeros on the screen to know the turn of the game.
         int zeros = zeroSum();
+        int baseDifficulty = this.difficulty + this.filledColumns();
 
         // Get the order in which moves will be checked.
         int[] checkOrder = getDistributionOrder();
 
 
 //        System.out.println("DANGER EVALUATION: " + (evaluateBoard(true, zeros)));
-        System.out.print("Thinking");
 
         // Loop over all possible moves and collect a list of moves which all have the same max value.
         ArrayList<Integer> bestMoves = new ArrayList<>();
         int max = Short.MIN_VALUE;
 
-        for(int i = 0; i < super.WIDTH; i++) {
-
-            int col = checkOrder[i];
-
+        // Check to see whether the AI can win or must defend before making a standard move.
+        for(int col = 0; col < super.WIDTH; col++)
             if (super.colIsOpen(col)) {
 
                 // Win at first priority.
                 super.placeCoin(col, this.PLAYER_CODE);
                 if (super.hasWon()) {
-                    System.out.println(". . The AI is striking for a win.\u001B[0m\n\n\n\n");
+                    System.out.println("The AI is striking for a win.\u001B[0m\n\n\n\n");
                     this.undoLastMove(col);
                     return col;
                 }
@@ -95,16 +94,26 @@ public class AI extends Board{
                 // Block at second priority.
                 super.placeCoin(col, (byte) 1);
                 if (super.hasWon()) {
-                    System.out.println(". . The AI is on the defense.\u001B[0m\n\n\n\n");
+                    System.out.println("The AI is on the defense.\u001B[0m\n\n\n\n");
                     this.undoLastMove(col);
                     return col;
                 }
                 this.undoLastMove(col);
+            }
+
+        // Call minimax method and evaluate possible moves.
+        System.out.print("Thinking");
+        for(int i = 0; i < super.WIDTH; i++) {
+
+            int col = checkOrder[i];
+
+            if (super.colIsOpen(col)) {
+
 
                 super.placeCoin(col, (byte) 2);
                 int loss = minimax(
                         false,
-                        this.difficulty + this.filledColumns(),
+                        emergencyComputations? Math.max(baseDifficulty, 7) : baseDifficulty,
                         Integer.MIN_VALUE,
                         Integer.MAX_VALUE,
                         zeros
@@ -139,8 +148,11 @@ public class AI extends Board{
         if(lossCount != 0) averageLoss /= lossCount;
         if (willWin) System.out.print("The AI sees an opening.");
         else if(playerTraps >= 3) System.out.print("The AI is being very cautious.");
-        else if(averageLoss <= -20) System.out.print("The AI is on the defense.");
+        else if(averageLoss <= -20) System.out.print("The AI trying to plan.");
         else if(averageLoss >= 20) System.out.print("The AI believes the game will end soon.");
+
+        this.emergencyComputations = playerTraps >= 3 || averageLoss <= -20;
+
         System.out.println("\u001B[0m\n\n\n\n");
 
         // Choose a random best move.
@@ -176,7 +188,6 @@ public class AI extends Board{
                 if(beta <= alpha) break;
 
             }
-
         return minMax;
 
     }
