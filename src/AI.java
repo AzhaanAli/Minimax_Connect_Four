@@ -6,6 +6,7 @@ public class AI extends Board{
     // Instance variables.
 
     public final byte PLAYER_CODE;
+    public int difficulty;
 
 
     // --------------------------------- //
@@ -13,12 +14,24 @@ public class AI extends Board{
 
     public AI(){
 
-        this((byte) 2);
+        this(6, 7, 8);
 
     }
-    public AI(byte playerCode){
+    public AI(int difficulty){
 
-        this.PLAYER_CODE = playerCode;
+        this(6, 7, difficulty);
+
+    }
+    public AI(int height, int width){
+
+        this(height, width, 8);
+
+    }
+    public AI(int height, int width, int difficulty){
+
+        super(height, width);
+        this.difficulty = difficulty;
+        this.PLAYER_CODE = (byte) 2;
 
     }
 
