@@ -1,6 +1,8 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class AI extends Board{
+
 
     // --------------------------------- //
     // Instance variables.
@@ -11,6 +13,12 @@ public class AI extends Board{
     // Controls the max recursive depth of the AI.
     public int difficulty;
 
+    // Counts the occurrences of each best move.
+    // This is helpful, as alpha-beta pruning becomes more useful the sooner better moves are found.
+    // Therefore, if there is a connection between the distribution of best moves and future best moves,
+    // then this array can be used to prioritize checking certain columns before others,
+    // pruning the decision-tree and resulting in much greater efficiency.
+    private int[] bestMoveDistribution;
 
     // --------------------------------- //
     // Constructor.
@@ -35,6 +43,7 @@ public class AI extends Board{
         super(height, width);
         this.difficulty = difficulty;
         this.PLAYER_CODE = (byte) 2;
+        this.bestMoveDistribution = new int[super.WIDTH];
 
     }
 
@@ -44,21 +53,40 @@ public class AI extends Board{
 
     public int getBestMove(){
 
+        // Color the AI's text.
+        System.out.print("\u001b[32m");
+
+        // Variables to note AI attitude.
+        boolean willWin = false;
+        boolean defending = false;
+        int averageLoss = 0;
+        int lossCount = 0;
+        int playerTraps = 0;
+
+        // Count the amount of zeros on the screen to know the turn of the game.
         int zeros = zeroSum();
+
+        // Get the order in which moves will be checked.
+        int[] checkOrder = getDistributionOrder();
+
+
 //        System.out.println("DANGER EVALUATION: " + (evaluateBoard(true, zeros)));
         System.out.print("Thinking");
 
-        int max = Short.MIN_VALUE;
+        // Loop over all possible moves and collect a list of moves which all have the same max value.
         ArrayList<Integer> bestMoves = new ArrayList<>();
+        int max = Short.MIN_VALUE;
 
-        for(int col = 0; col < super.WIDTH; col++)
-            if(super.colIsOpen(col))
-            {
+        for(int i = 0; i < super.WIDTH; i++) {
+
+            int col = checkOrder[i];
+
+            if (super.colIsOpen(col)) {
+
                 // Win at first priority.
-                super.placeCoin(col, (byte) 2);
-                if(super.hasWon())
-                {
-                    System.out.println();
+                super.placeCoin(col, this.PLAYER_CODE);
+                if (super.hasWon()) {
+                    System.out.println(". . The AI is striking for a win.\u001B[0m\n\n\n\n");
                     this.undoLastMove(col);
                     return col;
                 }
@@ -66,9 +94,8 @@ public class AI extends Board{
 
                 // Block at second priority.
                 super.placeCoin(col, (byte) 1);
-                if(super.hasWon())
-                {
-                    System.out.println();
+                if (super.hasWon()) {
+                    System.out.println(". . The AI is on the defense.\u001B[0m\n\n\n\n");
                     this.undoLastMove(col);
                     return col;
                 }
@@ -84,20 +111,41 @@ public class AI extends Board{
                 );
                 this.undoLastMove(col);
 
-//                System.out.print(" " + loss);
-                System.out.print(".");
-
-                if(loss > max)
+                // Update AI attitudes.
+                if(loss >= 100) willWin = true;
+                else if(loss <= -100) playerTraps++;
+                else
                 {
+                    averageLoss += loss;
+                    lossCount++;
+                }
+
+                System.out.print(". ");
+
+                if (loss > max) {
                     max = loss;
                     bestMoves.clear();
                     bestMoves.add(col);
-                }
-                else if(loss == max)
+                } else if (loss == max)
                     bestMoves.add(col);
             }
-        System.out.println("\n\n\n\n");
+        }
+
+        // Update best move distribution array.
+        for(int col : bestMoves) bestMoveDistribution[col]++;
+
+        // Interpret attitudes.
+        System.out.print(". . ");
+        if(lossCount != 0) averageLoss /= lossCount;
+        if (willWin) System.out.print("The AI sees an opening.");
+        else if(playerTraps >= 3) System.out.print("The AI is being very cautious.");
+        else if(averageLoss <= -20) System.out.print("The AI is on the defense.");
+        else if(averageLoss >= 20) System.out.print("The AI believes the game will end soon.");
+        System.out.println("\u001B[0m\n\n\n\n");
+
+        // Choose a random best move.
         return bestMoves.get((int)(Math.random() * bestMoves.size()));
+
     }
 
     // Recursive decision-making.
@@ -311,8 +359,32 @@ public class AI extends Board{
 
     }
 
+    // Converts a number N to the Nth most common occurrence of the best move distribution.
+    private int[] getDistributionOrder(){
+
+        // The Identity array contains all column positions and will be
+        // shuffled to resemble the order of the best move distribution array.
+        int[] identities = new int[super.WIDTH];
+        for(int i = 0; i < identities.length; i++)
+            identities[i] = i;
+
+        // Bubble sort.
+        for (int n = 0; n < this.bestMoveDistribution.length; n++)
+            for (int j = 0; j < this.bestMoveDistribution.length - n - 1; j++)
+                if (this.bestMoveDistribution[j] < this.bestMoveDistribution[j + 1]) {
+                    int swapString = this.bestMoveDistribution[j];
+                    this.bestMoveDistribution[j] = this.bestMoveDistribution[j + 1];
+                    this.bestMoveDistribution[j + 1] = swapString;
+                    int swapInt = identities[j];
+                    identities[j] = identities[j + 1];
+                    identities[j + 1] = swapInt;
+                }
+        return identities;
+
+    }
 
 
+    // --------------------------------- //
 
 
 }

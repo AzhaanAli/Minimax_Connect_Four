@@ -52,7 +52,7 @@ public class Main {
         }
 
         if(ai.zeroSum() == 0) System.out.println("Game has ended in a draw.");
-        else System.out.println("\n" + (startFirst? "Player" : "Ai") + " has won!");
+        else System.out.println("\n" + (startFirst? "\u001b[32mAi" : "Player") + " has won!");
 
     }
 
