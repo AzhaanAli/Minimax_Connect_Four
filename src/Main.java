@@ -24,7 +24,7 @@ public class Main {
         //      1  2  3  4  5  6  7
         };
 
-        AI ai = new AI();
+        AI ai = new AI(6, 7, 7);
 
         boolean aiTurn = Math.random() > .5;
         ai.print();
