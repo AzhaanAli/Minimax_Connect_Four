@@ -146,7 +146,11 @@ public class Board{
     }
     private void printBar(){
 
-        System.out.println("   " + "_".repeat(Math.max(0, 4 * this.WIDTH - 1)));
+        StringBuilder bar = new StringBuilder("   ");
+        int times = Math.max(0, 4 * this.WIDTH - 1);
+        for(int i = 0; i < times; i++)
+            bar.append("_");
+        System.out.println(bar);
 
     }
     private void printColNumbers(){
@@ -165,7 +169,8 @@ public class Board{
     private String formatCoinColor(byte coin){
 
         if(coin == 0) return "•";
-        return PLAYER_COLORS[coin - 1] + "○" + ANSI_RESET;
+        return PLAYER_COLORS[coin - 1] + "O" + ANSI_RESET;
+//        return PLAYER_COLORS[coin - 1] + "○" + ANSI_RESET;
 
     }
 
