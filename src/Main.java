@@ -8,7 +8,7 @@ public class Main {
 
     public static void main(String[] args) {
 
-        gameLoop();
+        startGame(11, 7);
 
     }
 

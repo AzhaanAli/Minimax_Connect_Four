@@ -185,7 +185,7 @@ public class AI extends Board{
 
         }
 
-        System.out.println("ALL SEEING: " + (double) Math.min(this.difficulty, zeros) / zeros * 100 + " %");
+//        System.out.println("ALL SEEING: " + (double) Math.min(this.difficulty, zeros) / zeros * 100 + " %");
 
         // Choose a random best move.
         return bestMoves.get((int)(Math.random() * bestMoves.size()));
