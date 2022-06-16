@@ -22,6 +22,10 @@ public class AI extends Board{
     // Gives the AI the ability to temporarily increase its computational depth when in danger.
     private boolean emergencyComputations = false;
 
+    // Lets the AI increase its difficulty when it begins to compute a moves faster.
+    // If a move takes more than 4 seconds to compute, the difficulty will decrement.
+    private final boolean dynamicDifficulty = true;
+
     // --------------------------------- //
     // Constructor.
 
@@ -37,7 +41,7 @@ public class AI extends Board{
     }
     public AI(int height, int width){
 
-        this(height, width, 7);
+        this(height, width, 6);
 
     }
     public AI(int height, int width, int difficulty){
@@ -55,6 +59,17 @@ public class AI extends Board{
 
     public int getBestMove(){
 
+        // Count the amount of zeros on the screen to know the turn of the game.
+        int zeros = zeroSum();
+        // Special case for turn 1.
+        if(zeros == super.board.length)
+        {
+            int half = (super.WIDTH - 1) / 2;
+            return super.WIDTH % 2 == 0? half + (int) (Math.random() * 2): half;
+        }
+
+        long startTime = System.currentTimeMillis();
+
         // Color the AI's text.
         System.out.print("\u001b[32m");
 
@@ -64,15 +79,11 @@ public class AI extends Board{
         int lossCount = 0;
         int playerTraps = 0;
 
-        // Count the amount of zeros on the screen to know the turn of the game.
-        int zeros = zeroSum();
+
         int baseDifficulty = this.difficulty + this.filledColumns();
 
         // Get the order in which moves will be checked.
         int[] checkOrder = getDistributionOrder();
-
-
-//        System.out.println("DANGER EVALUATION: " + (evaluateBoard(true, zeros)));
 
         // Loop over all possible moves and collect a list of moves which all have the same max value.
         ArrayList<Integer> bestMoves = new ArrayList<>();
@@ -85,7 +96,7 @@ public class AI extends Board{
                 // Win at first priority.
                 super.placeCoin(col, this.PLAYER_CODE);
                 if (super.hasWon()) {
-                    System.out.println("The AI is striking for a win.\u001B[0m\n\n\n\n");
+                    System.out.println("The AI is striking for a win.");
                     this.undoLastMove(col);
                     return col;
                 }
@@ -94,7 +105,7 @@ public class AI extends Board{
                 // Block at second priority.
                 super.placeCoin(col, (byte) 1);
                 if (super.hasWon()) {
-                    System.out.println("The AI is on the defense.\u001B[0m\n\n\n\n");
+                    System.out.println("The AI is on the defense.");
                     this.undoLastMove(col);
                     return col;
                 }
@@ -108,7 +119,6 @@ public class AI extends Board{
             int col = checkOrder[i];
 
             if (super.colIsOpen(col)) {
-
 
                 super.placeCoin(col, (byte) 2);
                 int loss = minimax(
@@ -131,12 +141,13 @@ public class AI extends Board{
 
                 System.out.print(". ");
 
-                if (loss > max) {
+                if (loss > max)
+                {
                     max = loss;
                     bestMoves.clear();
                     bestMoves.add(col);
-                } else if (loss == max)
-                    bestMoves.add(col);
+                }
+                else if (loss == max) bestMoves.add(col);
             }
         }
 
@@ -153,13 +164,39 @@ public class AI extends Board{
 
         this.emergencyComputations = playerTraps >= 3 || averageLoss <= -20;
 
-        System.out.println("\u001B[0m\n\n\n\n");
+        System.out.println();
+
+        if(this.dynamicDifficulty)
+        {
+            long elapsedTime = System.currentTimeMillis() - startTime;
+            if(elapsedTime <= 400 && this.difficulty >= 4)
+            {
+                // Difficulty should be gradually increased.
+                // Increase will be defined by 400 --> 2 and 100 --> 4.
+                // (400, 2) and (100, 4)
+                // Equation will follow y = mx + b.
+                // m = (2 - 4) / (400 - 100) = -1/150
+                // 2 = -400 / 150 + b --> b = 4 + 2/3
+                // y = 4 + 2/3 - x / 150
+                this.difficulty += (4.6666F - elapsedTime / 150);
+                System.out.println("The AI is closing in.");
+            }
+            else if(elapsedTime <= 1000)
+            {
+                this.difficulty++;
+                System.out.println("The AI has learned something new.");
+            }
+            else if (elapsedTime >= 7500 && this.difficulty > 6) this.difficulty = 6;
+            else if (elapsedTime >= 4000 && this.difficulty > 5) this.difficulty--;
+
+        }
 
         // Choose a random best move.
         return bestMoves.get((int)(Math.random() * bestMoves.size()));
 
     }
 
+    // TODO: add more comments to this method.
     // Recursive decision-making.
     public int minimax(boolean aiTurn, int countDown, int alpha, int beta, int zeros){
 
