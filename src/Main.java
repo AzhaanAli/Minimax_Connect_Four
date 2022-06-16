@@ -6,11 +6,7 @@ public class Main {
 
     public static void main(String[] args) {
 
-        startGame(
-                10,
-                7,
-                6
-        );
+        startGame(11, 7);
 
     }
 
@@ -27,7 +23,7 @@ public class Main {
     }
     public static void startGame(int boardHeight, int boardWidth){
 
-        startGame(boardHeight, boardWidth, 7);
+        startGame(boardHeight, boardWidth, 6);
 
     }
     public static void startGame(int boardHeight, int boardWidth, int aiRecursiveDepth){
@@ -46,6 +42,7 @@ public class Main {
         {
             if(startFirst) ai.promptUserTurn();
             else ai.placeCoin(ai.getBestMove(), (byte) 2);
+            System.out.println("\u001B[0m\n");
 
             ai.print();
             startFirst = !startFirst;
