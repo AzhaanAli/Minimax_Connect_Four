@@ -7,9 +7,9 @@ public class Main {
     public static void main(String[] args) {
 
         startGame(
-                6,
+                10,
                 7,
-                7
+                6
         );
 
     }
