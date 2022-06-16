@@ -5,7 +5,10 @@ public class AI extends Board{
     // --------------------------------- //
     // Instance variables.
 
+    // Controls the color of coin the AI uses.
     public final byte PLAYER_CODE;
+
+    // Controls the max recursive depth of the AI.
     public int difficulty;
 
 
@@ -14,7 +17,7 @@ public class AI extends Board{
 
     public AI(){
 
-        this(6, 7, 8);
+        this(6, 7, 7);
 
     }
     public AI(int difficulty){
@@ -24,7 +27,7 @@ public class AI extends Board{
     }
     public AI(int height, int width){
 
-        this(height, width, 8);
+        this(height, width, 7);
 
     }
     public AI(int height, int width, int difficulty){
@@ -100,7 +103,8 @@ public class AI extends Board{
     // Recursive decision-making.
     public int minimax(boolean aiTurn, int countDown, int alpha, int beta, int zeros){
 
-        if (super.hasWon() || countDown == 0) return this.evaluateBoard(aiTurn, zeros);
+        if (super.hasWon() || countDown == 0) return this.evaluateBoard(!aiTurn, zeros);
+
         int minMax = aiTurn? Integer.MIN_VALUE + 1 : Integer.MAX_VALUE - 1;
         for(int col = 0; col < super.WIDTH; col++)
             if(super.colIsOpen(col))
@@ -129,118 +133,98 @@ public class AI extends Board{
 
     }
 
-    // Evaluates a boards state.
+
+    // --------------------------------- //
+    // Scoring Methods.
+
+    // Evaluates and "scores" a games terminal-state.
+    // This method is the heart of the AI, as it determines what it values and thus how it tries to win.
     private int evaluateBoard(boolean aiTurn, int zeros) {
 
         int score = 0;
 
-        if(super.hasWon()){
-            score += zeros * 100;
-        }
+        // If the game has been won, add a high amount of points scaled by how quick it was won.
+        // The more zeros on the screen the fewer turns have passed, making it a good metric for the scalar.
+        if(super.hasWon()) score += zeros * 100;
 
-        score += this.sumVertical(aiTurn);
-        score += this.sumHorizontal(aiTurn);
-        score += this.sumLeftDiagonal(aiTurn);
-        score += this.sumRightDiagonal(aiTurn);
+        // Add points gained from game non-terminal-states.
+        score += this.getNonTerminalPoints(!aiTurn);
 
-        if(aiTurn) score *= -1;
-        return score;
-
-    }
-
-    public int zeroSum(){
-
-        int total = 0;
-        for(byte b : super.board)
-            if(b == 0)
-                total++;
-        return total;
+        // If these points are for the player, make the score negative.
+        // This symbolizes them working against the AI's cause.
+        return aiTurn? score : -score;
 
     }
 
-
-
-    // TODO: make switch case a method.
-    // TODO: combine all into one loop.
-    public int sumHorizontal(boolean aiTurn){
+    // Returns the score component for a non-terminal board.
+    public int getNonTerminalPoints(boolean aiTurn){
 
         int totalPoints = 0;
         for(int row = 0; row < this.HEIGHT; row++)
-            for (int col = 3; col < this.WIDTH; col++)
+            for (int col = 0; col < this.WIDTH; col++)
             {
-                StringBuilder identity = new StringBuilder();
-                for (int offset = 0; offset < 4; offset++)
-                    identity.append(switch (this.board[getIndex(row, col - offset)]) {
-                        case 0 -> " ";
-                        case 1 -> "1";
-                        case 2 -> "2";
-                        default -> throw new IllegalStateException("Unexpected value.");
-                    });
-                totalPoints += scoreIdentityStr(identity.toString(), aiTurn);
 
+                byte player = this.board[getIndex(row, col)];
+
+                // Tally horizontal points.
+                StringBuilder identity = new StringBuilder();
+                if (col >= 3) {
+                    for (int offset = 0; offset < 4; offset++)
+                        identity.append(switch (this.board[getIndex(row, col - offset)]) {
+                            case 0 -> " ";
+                            case 1 -> "1";
+                            case 2 -> "2";
+                            default -> throw new IllegalStateException("Unexpected value.");
+                        });
+                    totalPoints += scoreIdentityStr(identity.toString(), aiTurn);
+                }
+
+                // Tally vertical points.
+                identity = new StringBuilder();
+                if (row >= 3) {
+                    for (int offset = 0; offset < 4; offset++)
+                        identity.append(switch (this.board[getIndex(row - offset, col)]) {
+                            case 0 -> " ";
+                            case 1 -> "1";
+                            case 2 -> "2";
+                            default -> throw new IllegalStateException("Unexpected value.");
+                        });
+                    totalPoints += scoreIdentityStr(identity.toString(), aiTurn);
+                }
+
+                // Tally right diagonal points.
+                identity = new StringBuilder();
+                if (row >= 3 && col >= 3) {
+                    for (int offset = 0; offset < 4; offset++)
+                        identity.append(switch (this.board[getIndex(row - offset, col - offset)]) {
+                            case 0 -> " ";
+                            case 1 -> "1";
+                            case 2 -> "2";
+                            default -> throw new IllegalStateException("Unexpected value.");
+                        });
+                    totalPoints += scoreIdentityStr(identity.toString(), aiTurn);
+                }
+
+                // Tally left diagonal points.
+                identity = new StringBuilder();
+                if (row >= 3 && col <= this.WIDTH - 4) {
+                    for (int offset = 0; offset < 4; offset++)
+                        identity.append(switch (this.board[getIndex(row - offset, col + offset)]) {
+                            case 0 -> " ";
+                            case 1 -> "1";
+                            case 2 -> "2";
+                            default -> throw new IllegalStateException("Unexpected value.");
+                        });
+                    totalPoints += scoreIdentityStr(identity.toString(), aiTurn);
+                }
 
             }
         return totalPoints;
 
     }
-    public int sumVertical(boolean aiTurn){
 
-        int totalPoints = 0;
-        for(int row = 3; row < this.HEIGHT; row++)
-            for(int col = 0; col < this.WIDTH; col++)
-            {
-                StringBuilder identity = new StringBuilder();
-                for (int offset = 0; offset < 4; offset++)
-                    identity.append(switch (this.board[getIndex(row - offset, col)]) {
-                        case 0 -> " ";
-                        case 1 -> "1";
-                        case 2 -> "2";
-                        default -> throw new IllegalStateException("Unexpected value.");
-                    });
-                totalPoints += scoreIdentityStr(identity.toString(), aiTurn);
-            }
-        return totalPoints;
-
-    }
-    public int sumRightDiagonal(boolean aiTurn){
-
-        int totalPoints = 0;
-        for(int row = 3; row < this.HEIGHT; row++)
-            for (int col = 3; col < this.WIDTH; col++)
-            {
-                StringBuilder identity = new StringBuilder();
-                for (int offset = 0; offset < 4; offset++)
-                    identity.append(switch (this.board[getIndex(row - offset, col - offset)]) {
-                        case 0 -> " ";
-                        case 1 -> "1";
-                        case 2 -> "2";
-                        default -> throw new IllegalStateException("Unexpected value.");
-                    });
-                totalPoints += scoreIdentityStr(identity.toString(), aiTurn);
-            }
-        return totalPoints;
-
-    }
-    public int sumLeftDiagonal(boolean aiTurn){
-
-        int totalPoints = 0;
-        for(int row = 3; row < this.HEIGHT; row++)
-            for (int col = this.WIDTH - 4; col >= 0; col--)
-            {
-                StringBuilder identity = new StringBuilder();
-                for (int offset = 0; offset < 4; offset++)
-                    identity.append(switch (this.board[getIndex(row - offset, col + offset)]) {
-                        case 0 -> " ";
-                        case 1 -> "1";
-                        case 2 -> "2";
-                        default -> throw new IllegalStateException("Unexpected value.");
-                    });
-                totalPoints += scoreIdentityStr(identity.toString(), aiTurn);
-            }
-        return totalPoints;
-
-    }
-
+    // This method takes in an identity string representing the "form" of a group of four coins on the board.
+    // All forms are not created equal in the aid of victory, therefore they deserve different scores.
     public int scoreIdentityStr(String identity, boolean aiTurn){
 
         int playerPoints = switch(identity){
@@ -283,18 +267,6 @@ public class AI extends Board{
 
     }
 
-    public int filledColumns(){
-
-        int total = 0;
-        for(int i = 0; i < super.WIDTH; i++)
-            if(!super.colIsOpen(i))
-                total++;
-        return total;
-
-    }
-
-
-
 
     // --------------------------------- //
     // Helper Methods.
@@ -311,6 +283,31 @@ public class AI extends Board{
                 return;
             }
         }
+
+    }
+
+    // This method counts the number of filled columns.
+    // Filled columns are important, as for each one, the AI makes significantly fewer recursive calls.
+    // By extension, this means that as the amount of filled columns increases, recursive depth can be increased.
+    private int filledColumns(){
+
+        int total = 0;
+        for(int i = 0; i < super.WIDTH; i++)
+            if(!super.colIsOpen(i))
+                total++;
+        return total;
+
+    }
+
+    // Counts the amount of zeros on the board.
+    // Total numbers - the amount of zeros on the screen equates to the turn of the game.
+    public int zeroSum(){
+
+        int total = 0;
+        for(byte b : super.board)
+            if(b == 0)
+                total++;
+        return total;
 
     }
 
