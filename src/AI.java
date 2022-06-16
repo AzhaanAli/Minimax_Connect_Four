@@ -28,6 +28,10 @@ public class AI extends Board{
 
     public int getBestMove(){
 
+        int zeros = zeroSum();
+//        System.out.println("DANGER EVALUATION: " + evaluateBoard(true, zeros));
+        System.out.print("Thinking");
+
         int max = Short.MIN_VALUE;
         ArrayList<Integer> bestMoves = new ArrayList<>();
 
@@ -38,6 +42,7 @@ public class AI extends Board{
                 super.placeCoin(col, (byte) 2);
                 if(super.hasWon())
                 {
+                    System.out.println();
                     this.undoLastMove(col);
                     return col;
                 }
@@ -47,16 +52,18 @@ public class AI extends Board{
                 super.placeCoin(col, (byte) 1);
                 if(super.hasWon())
                 {
+                    System.out.println();
                     this.undoLastMove(col);
                     return col;
                 }
                 this.undoLastMove(col);
 
                 super.placeCoin(col, (byte) 2);
-                int loss = minimax(false, 9, Integer.MIN_VALUE, Integer.MAX_VALUE);
+                int loss = minimax(false, 8, Integer.MIN_VALUE, Integer.MAX_VALUE, zeros);
                 this.undoLastMove(col);
 
-                System.out.print(loss + " ");
+                System.out.print(" " + loss);
+//                System.out.print(".");
 
                 if(loss > max)
                 {
@@ -67,16 +74,14 @@ public class AI extends Board{
                 else if(loss == max)
                     bestMoves.add(col);
             }
-        System.out.println();
-
-        System.out.println(bestMoves + " --> " + max);
+        System.out.println("\n\n\n\n");
         return bestMoves.get((int)(Math.random() * bestMoves.size()));
     }
 
     // Recursive decision-making.
-    public int minimax(boolean aiTurn, int countDown, int alpha, int beta){
+    public int minimax(boolean aiTurn, int countDown, int alpha, int beta, int zeros){
 
-        if (super.hasWon() || countDown == 0) return this.evaluateBoard(aiTurn);
+        if (super.hasWon() || countDown == 0) return this.evaluateBoard(aiTurn, zeros);
         int minMax = aiTurn? Integer.MIN_VALUE + 1 : Integer.MAX_VALUE - 1;
         for(int col = 0; col < super.WIDTH; col++)
             if(super.colIsOpen(col))
@@ -85,47 +90,45 @@ public class AI extends Board{
                 int loss = minimax(
                         !aiTurn,
                         countDown - 1,
-                        alpha, beta
+                        alpha, beta,
+                        zeros - 1
                 );
                 minMax = aiTurn?
                         Math.max(minMax, loss):
                         Math.min(minMax, loss);
                 undoLastMove(col);
 
-                if(aiTurn)
-                {
-                    alpha = Math.max(alpha, loss);
-                }else{
-                    beta = Math.min(beta, loss);
-                }
-
+                // Alpha-Beta pruning.
+                if(aiTurn) alpha = Math.max(alpha, loss);
+                else beta = Math.min(beta, loss);
                 if(beta <= alpha) break;
 
             }
+
         return minMax;
 
     }
 
     // Evaluates a boards state.
-    private int evaluateBoard(boolean aiTurn) {
+    private int evaluateBoard(boolean aiTurn, int zeros) {
 
         int score = 0;
 
         if(super.hasWon()){
-            score += (1 + zeroSum()) * 100;
+            score += zeros * 100;
         }
 
-        score += this.sumVertical();
-        score += this.sumHorizontal();
-        score += this.sumLeftDiagonal();
-        score += this.sumRightDiagonal();
+        score += this.sumVertical(aiTurn);
+        score += this.sumHorizontal(aiTurn);
+        score += this.sumLeftDiagonal(aiTurn);
+        score += this.sumRightDiagonal(aiTurn);
 
         if(aiTurn) score *= -1;
         return score;
 
     }
 
-    private int zeroSum(){
+    public int zeroSum(){
 
         int total = 0;
         for(byte b : super.board)
@@ -139,178 +142,127 @@ public class AI extends Board{
 
     // TODO: make switch case a method.
     // TODO: combine all into one loop.
-    public int sumHorizontal(){
+    public int sumHorizontal(boolean aiTurn){
 
         int totalPoints = 0;
         for(int row = 0; row < this.HEIGHT; row++)
-        {
-            StringBuilder identity = new StringBuilder();
             for (int col = 3; col < this.WIDTH; col++)
             {
-
+                StringBuilder identity = new StringBuilder();
                 for (int offset = 0; offset < 4; offset++)
-                {
                     identity.append(switch (this.board[getIndex(row, col - offset)]) {
                         case 0 -> " ";
+                        case 1 -> "1";
                         case 2 -> "2";
-                        default -> "1";
+                        default -> throw new IllegalStateException("Unexpected value.");
                     });
+                totalPoints += scoreIdentityStr(identity.toString(), aiTurn);
 
-                }
 
             }
-
-            totalPoints += switch(identity.toString()){
-                default -> 0;
-
-                // Two cases.
-                case " 22 " -> 5;
-                case "22  " -> 2;
-                case "22 1" -> 1;
-                case "  22" -> 2;
-                case "1 22" -> 1;
-
-                // Three cases.
-                case "222 " -> 7;
-                case " 222" -> 7;
-                case "2 22" -> 7;
-                case "22 2" -> 7;
-
-            };
-
-        }
         return totalPoints;
 
     }
-    public int sumVertical(){
+    public int sumVertical(boolean aiTurn){
 
         int totalPoints = 0;
         for(int row = 3; row < this.HEIGHT; row++)
-        {
-            StringBuilder identity = new StringBuilder();
             for(int col = 0; col < this.WIDTH; col++)
             {
-
+                StringBuilder identity = new StringBuilder();
                 for (int offset = 0; offset < 4; offset++)
-                {
                     identity.append(switch (this.board[getIndex(row - offset, col)]) {
                         case 0 -> " ";
+                        case 1 -> "1";
                         case 2 -> "2";
-                        default -> "1";
+                        default -> throw new IllegalStateException("Unexpected value.");
                     });
-
-                }
-
+                totalPoints += scoreIdentityStr(identity.toString(), aiTurn);
             }
-
-            totalPoints += switch(identity.toString()){
-                default -> 0;
-
-                // Two cases.
-                case " 22 " -> 5;
-                case "22  " -> 2;
-                case "22 1" -> 1;
-                case "  22" -> 2;
-                case "1 22" -> 1;
-
-                // Three cases.
-                case "222 " -> 7;
-                case " 222" -> 7;
-                case "2 22" -> 7;
-                case "22 2" -> 7;
-
-            };
-
-        }
         return totalPoints;
 
     }
-    public int sumRightDiagonal(){
+    public int sumRightDiagonal(boolean aiTurn){
 
         int totalPoints = 0;
         for(int row = 3; row < this.HEIGHT; row++)
-        {
-            StringBuilder identity = new StringBuilder();
             for (int col = 3; col < this.WIDTH; col++)
             {
-
+                StringBuilder identity = new StringBuilder();
                 for (int offset = 0; offset < 4; offset++)
-                {
                     identity.append(switch (this.board[getIndex(row - offset, col - offset)]) {
                         case 0 -> " ";
+                        case 1 -> "1";
                         case 2 -> "2";
-                        default -> "1";
+                        default -> throw new IllegalStateException("Unexpected value.");
                     });
-
-                }
-
+                totalPoints += scoreIdentityStr(identity.toString(), aiTurn);
             }
-
-            totalPoints += switch(identity.toString()){
-                default -> 0;
-
-                // Two cases.
-                case " 22 " -> 5;
-                case "22  " -> 2;
-                case "22 1" -> 1;
-                case "  22" -> 2;
-                case "1 22" -> 1;
-
-                // Three cases.
-                case "222 " -> 7;
-                case " 222" -> 7;
-                case "2 22" -> 7;
-                case "22 2" -> 7;
-
-            };
-
-        }
         return totalPoints;
 
     }
-    public int sumLeftDiagonal(){
+    public int sumLeftDiagonal(boolean aiTurn){
 
         int totalPoints = 0;
         for(int row = 3; row < this.HEIGHT; row++)
-        {
-            StringBuilder identity = new StringBuilder();
             for (int col = this.WIDTH - 4; col >= 0; col--)
             {
-
+                StringBuilder identity = new StringBuilder();
                 for (int offset = 0; offset < 4; offset++)
-                {
                     identity.append(switch (this.board[getIndex(row - offset, col + offset)]) {
                         case 0 -> " ";
+                        case 1 -> "1";
                         case 2 -> "2";
-                        default -> "1";
+                        default -> throw new IllegalStateException("Unexpected value.");
                     });
-
-                }
-
+                totalPoints += scoreIdentityStr(identity.toString(), aiTurn);
             }
-
-            totalPoints += switch(identity.toString()){
-                default -> 0;
-
-                // Two cases.
-                case " 22 " -> 5;
-                case "22  " -> 2;
-                case "22 1" -> 1;
-                case "  22" -> 2;
-                case "1 22" -> 1;
-
-                // Three cases.
-                case "222 " -> 7;
-                case " 222" -> 7;
-                case "2 22" -> 7;
-                case "22 2" -> 7;
-
-            };
-
-        }
         return totalPoints;
 
     }
+
+    public int scoreIdentityStr(String identity, boolean aiTurn){
+
+        int playerPoints = switch(identity){
+            default -> 0;
+
+            // Two cases.
+            case " 11 " -> 5;
+            case "1  1" -> 3;
+            case "11  " -> 2;
+            case "11 2" -> 1;
+            case "  11" -> 2;
+            case "2 11" -> 1;
+
+            // Three cases.
+            case "111 " -> 7;
+            case " 111" -> 7;
+            case "1 11" -> 7;
+            case "11 1" -> 7;
+        };
+        int aiPoints = switch(identity){
+            default -> 0;
+
+            // Two cases.
+            case " 22 " -> 5;
+            case "2  2" -> 3;
+            case "22  " -> 2;
+            case "22 1" -> 1;
+            case "  22" -> 2;
+            case "1 22" -> 1;
+
+            // Three cases.
+            case "222 " -> 7;
+            case " 222" -> 7;
+            case "2 22" -> 7;
+            case "22 2" -> 7;
+        };
+
+        if(aiTurn) return playerPoints - aiPoints;
+        else return aiPoints - playerPoints;
+
+    }
+
 
 
 
@@ -331,6 +283,7 @@ public class AI extends Board{
         }
 
     }
+
 
 
 
