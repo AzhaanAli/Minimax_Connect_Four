@@ -57,6 +57,7 @@ public class AI extends Board{
     // --------------------------------- //
     // Methods.
 
+
     public int getBestMove(){
 
         // Count the amount of zeros on the screen to know the turn of the game.
@@ -85,35 +86,31 @@ public class AI extends Board{
         // Get the order in which moves will be checked.
         int[] checkOrder = getDistributionOrder();
 
-        // Loop over all possible moves and collect a list of moves which all have the same max value.
-        ArrayList<Integer> bestMoves = new ArrayList<>();
-        int max = Short.MIN_VALUE;
 
         // Check to see whether the AI can win or must defend before making a standard move.
         for(int col = 0; col < super.WIDTH; col++)
-            if (super.colIsOpen(col)) {
-                // Win at first priority.
-                super.placeCoin(col, this.PLAYER_CODE);
-                if (super.hasWon()) {
-                    System.out.println("The AI is striking for a win.");
-                    this.undoLastMove(col);
-                    return col;
-                }
-                this.undoLastMove(col);
+        {
+            // Win at first priority.
+            if(this.testWin(col, this.PLAYER_CODE))
+            {
+                System.out.println("AI is making the winning move.");
+                return col;
             }
+        }
         for(int col = 0; col < super.WIDTH; col++)
-            if (super.colIsOpen(col)) {
-                // Block at second priority.
-                super.placeCoin(col, (byte) 1);
-                if (super.hasWon()) {
-                    System.out.println("The AI is on the defense.");
-                    this.undoLastMove(col);
-                    return col;
-                }
-                this.undoLastMove(col);
+        {
+            // Defend at second priority.
+            if(this.testWin(col, (byte) 1))
+            {
+                System.out.println("AI is on defense.");
+                return col;
             }
+        }
 
-        // Call minimax method and evaluate possible moves.
+
+        // Loop over all possible moves and collect a list of moves which all have the same max value.
+        ArrayList<Integer> bestMoves = new ArrayList<>();
+        int max = Short.MIN_VALUE;
         System.out.print("Thinking");
         for(int i = 0; i < super.WIDTH; i++) {
 
@@ -450,6 +447,19 @@ public class AI extends Board{
                     identities[j + 1] = swapInt;
                 }
         return identities;
+
+    }
+
+    // Returns whether placing a coin at a given col will result in a victory for a given player.
+    private boolean testWin(int col, byte playerCode){
+
+        boolean victory = false;
+        if (super.colIsOpen(col)) {
+            super.placeCoin(col, playerCode);
+            victory = super.hasWon();
+            this.undoLastMove(col);
+        }
+        return victory;
 
     }
 
