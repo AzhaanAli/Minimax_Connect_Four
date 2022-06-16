@@ -225,6 +225,30 @@ public class Board{
         return false;
     }
 
+//    private boolean hasWonGeneral(){
+//
+//        for(int row = 0; row < this.HEIGHT; row++)
+//        {
+//            for(int col = 0; col < this.WIDTH; col++)
+//            {
+//
+//                boolean victory = true;
+//
+//                // Horizontal test.
+//                byte player = this.board[getIndex(row, col)];
+//                if(player != 0)
+//                {
+//                    for (int offset = 1; offset < 4; offset++)
+//                        victory = victory && player == this.board[getIndex(row, col - offset)];
+//                    if (victory) return true;
+//                }
+//
+//
+//            }
+//        }
+//
+//    }
+
 
     // --------------------------------- //
 
