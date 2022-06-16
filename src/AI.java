@@ -29,7 +29,7 @@ public class AI extends Board{
     public int getBestMove(){
 
         int zeros = zeroSum();
-//        System.out.println("DANGER EVALUATION: " + evaluateBoard(true, zeros));
+        System.out.println("DANGER EVALUATION: " + (evaluateBoard(true, zeros)));
         System.out.print("Thinking");
 
         int max = Short.MIN_VALUE;

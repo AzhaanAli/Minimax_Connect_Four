@@ -29,7 +29,7 @@ public class Main {
         boolean aiTurn = Math.random() > .5;
         ai.print();
 
-        while(!ai.hasWon() || ai.zeroSum() != 0)
+        while(!ai.hasWon() && ai.zeroSum() != 0)
         {
             if(aiTurn) ai.placeCoin(ai.getBestMove(), (byte) 2);
             else ai.promptUserTurn();
