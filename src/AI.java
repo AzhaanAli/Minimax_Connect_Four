@@ -92,7 +92,6 @@ public class AI extends Board{
         // Check to see whether the AI can win or must defend before making a standard move.
         for(int col = 0; col < super.WIDTH; col++)
             if (super.colIsOpen(col)) {
-
                 // Win at first priority.
                 super.placeCoin(col, this.PLAYER_CODE);
                 if (super.hasWon()) {
@@ -101,7 +100,9 @@ public class AI extends Board{
                     return col;
                 }
                 this.undoLastMove(col);
-
+            }
+        for(int col = 0; col < super.WIDTH; col++)
+            if (super.colIsOpen(col)) {
                 // Block at second priority.
                 super.placeCoin(col, (byte) 1);
                 if (super.hasWon()) {
@@ -160,7 +161,7 @@ public class AI extends Board{
         if (willWin) System.out.print("The AI sees an opening.");
         else if(playerTraps >= 3) System.out.print("The AI is being very cautious.");
         else if(averageLoss <= -20) System.out.print("The AI trying to plan.");
-        else if(averageLoss >= 20) System.out.print("The AI believes the game will end soon.");
+        else if(averageLoss >= 20) System.out.print("The AI believes you should be cautious.");
 
         this.emergencyComputations = playerTraps >= 3 || averageLoss <= -20;
 
@@ -190,6 +191,8 @@ public class AI extends Board{
             else if (elapsedTime >= 4000 && this.difficulty > 5) this.difficulty--;
 
         }
+
+        System.out.println("DIFFICULTY: " + this.difficulty);
 
         // Choose a random best move.
         return bestMoves.get((int)(Math.random() * bestMoves.size()));
