@@ -46,9 +46,16 @@ public class Board{
         int col = -1;
         while(!this.colIsOpen(col))
         {
-            System.out.print("Choose a valid colum: ");
-            choice = SC.nextLine();
-            col = Integer.parseInt(choice) - 1;
+            try
+            {
+                System.out.print("Choose a valid colum: ");
+                choice = SC.nextLine();
+                col = Integer.parseInt(choice) - 1;
+            }
+            catch(Exception e)
+            {
+                choice = "";
+            }
         }
         this.placeCoin(col, (byte) 1);
 
