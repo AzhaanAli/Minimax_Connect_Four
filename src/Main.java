@@ -1,9 +1,4 @@
-
-
 public class Main {
-
-
-    public static byte[] board;
 
 
     // --------------------------------- //
@@ -11,37 +6,58 @@ public class Main {
 
     public static void main(String[] args) {
 
-        board = new byte[]{
-                0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 2, 2, 0,
-        //      1  2  3  4  5  6  7
-        };
+        startGame(
+                6,
+                7,
+                7
+        );
 
-        AI ai = new AI(6, 7, 7);
+    }
 
-        boolean aiTurn = Math.random() > .5;
+
+    // --------------------------------- //
+    // Helper Methods.
+
+    // Begins a new game.
+    // Parameters include dimensions of the board, max AI recursive depth, and whether you have the first turn.
+    public static void startGame(){
+
+        startGame(6, 7);
+
+    }
+    public static void startGame(int boardHeight, int boardWidth){
+
+        startGame(boardHeight, boardWidth, 7);
+
+    }
+    public static void startGame(int boardHeight, int boardWidth, int aiRecursiveDepth){
+
+        // 50-50 chance on who opens first.
+        startGame(boardHeight, boardWidth, aiRecursiveDepth, Math.random() > .5);
+
+    }
+    public static void startGame(int boardHeight, int boardWidth, int aiRecursiveDepth, boolean startFirst){
+
+        AI ai = new AI(boardHeight, boardWidth, aiRecursiveDepth);
+
         ai.print();
 
         while(!ai.hasWon() && ai.zeroSum() != 0)
         {
-            if(aiTurn) ai.placeCoin(ai.getBestMove(), (byte) 2);
-            else ai.promptUserTurn();
+            if(startFirst) ai.promptUserTurn();
+            else ai.placeCoin(ai.getBestMove(), (byte) 2);
 
             ai.print();
-            aiTurn = !aiTurn;
+            startFirst = !startFirst;
         }
 
         if(ai.zeroSum() == 0) System.out.println("Game has ended in a draw.");
-        else System.out.println("\n" + (aiTurn? "Player" : "Ai") + " has won!");
-
-
-
+        else System.out.println("\n" + (startFirst? "Player" : "Ai") + " has won!");
 
     }
+
+
+    // --------------------------------- //
 
 
 }
