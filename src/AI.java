@@ -62,8 +62,6 @@ public class AI extends Board{
 
     public int getBestMove(){
 
-        if(memoize && this.difficulty < 7) this.difficulty = 7;
-
         // Color the AI's text.
         System.out.print("\u001b[32m");
 
@@ -205,7 +203,7 @@ public class AI extends Board{
                 if(this.colIsOpen(i))
                     return i;
 
-        if(this.memoize)
+        if(this.memoize && this.difficulty >= 7)
         {
             // Before returning, store the best moves array.
             memoizer.cacheBoard(boardAsString, Arrays.toString(lossList));
