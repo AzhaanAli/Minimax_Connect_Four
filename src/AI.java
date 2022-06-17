@@ -59,7 +59,6 @@ public class AI extends Board{
     // --------------------------------- //
     // Methods.
 
-
     public int getBestMove(){
 
         // Color the AI's text.
@@ -72,7 +71,7 @@ public class AI extends Board{
             int best = this.memoizer.getBestMove(boardAsString);
             if(best != -1)
             {
-                System.out.println("The AI recognized a pattern.");
+                System.out.println("The AI predicted your move.");
                 return best;
             }
         }
@@ -119,7 +118,7 @@ public class AI extends Board{
         this.checkOrder = getDistributionOrder();
 
         // Loop over all possible moves and collect a list of moves which all have the same max value.
-        System.out.print("The AI is thinking");
+        System.out.print("The AI is thinking ");
         ArrayList<Integer> bestMoves = new ArrayList<>();
         int max = Short.MIN_VALUE;
         int baseDifficulty = this.difficulty + this.filledColumns();
@@ -150,7 +149,7 @@ public class AI extends Board{
                     lossCount++;
                 }
 
-                System.out.print(". ");
+                System.out.print("•");
 
                 if (loss > max)
                 {
@@ -168,7 +167,7 @@ public class AI extends Board{
         // Interpret attitudes.
         System.out.println();
         if(lossCount != 0) averageLoss /= lossCount;
-        if (willWin) System.out.println("The AI sees an opening.");
+        if (willWin) System.out.println("The AI has formulated a plan.");
         else if(playerTraps >= 3) System.out.println("The AI is being very cautious.");
         else if(averageLoss <= -20) System.out.println("The AI trying to plan.");
 
@@ -222,7 +221,7 @@ public class AI extends Board{
         String boardAsString = Arrays.toString(super.board);
         if(aiTurn && this.memoizer.dictionary.containsKey(boardAsString))
         {
-            System.out.println(".");
+            System.out.print("×");
             return this.memoizer.getMinMax(boardAsString, aiTurn);
         }
 
