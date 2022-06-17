@@ -8,7 +8,7 @@ public class Main {
 
     public static void main(String[] args) {
 
-        startGame(11, 7);
+        startGame(6, 7, 7);
 
     }
 
@@ -50,8 +50,11 @@ public class Main {
             startFirst = !startFirst;
         }
 
+        System.out.println("\u001b[32m");
         if(ai.zeroSum() == 0) System.out.println("Game has ended in a draw.");
         else System.out.println("\n" + (startFirst? "Ai" : "Player") + " has won!");
+        System.out.print("\u001B[0m\n");
+
 
     }
 

@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class AI extends Board{
 
@@ -18,25 +19,24 @@ public class AI extends Board{
     // then this array can be used to prioritize checking certain columns before others,
     // pruning the decision-tree and resulting in much greater efficiency.
     private final int[] bestMoveDistribution;
+    private int[] checkOrder;
 
     // Gives the AI the ability to temporarily increase its computational depth when in danger.
     private boolean emergencyComputations = false;
 
     // Lets the AI increase its difficulty when it begins to compute a moves faster.
     // If a move takes more than 4 seconds to compute, the difficulty will decrement.
-    private final boolean dynamicDifficulty = true;
+    private boolean dynamicDifficulty;
+
+    private final boolean memoize;
+    private final Memoizer memoizer = new Memoizer();
 
     // --------------------------------- //
     // Constructor.
 
     public AI(){
 
-        this(6, 7, 7);
-
-    }
-    public AI(int difficulty){
-
-        this(6, 7, difficulty);
+        this(6, 7);
 
     }
     public AI(int height, int width){
@@ -50,6 +50,8 @@ public class AI extends Board{
         this.difficulty = difficulty;
         this.PLAYER_CODE = (byte) 2;
         this.bestMoveDistribution = new int[super.WIDTH];
+        this.dynamicDifficulty = true;
+        this.memoize = difficulty >= 6 && height == 6 && width == 7;
 
     }
 
@@ -59,6 +61,24 @@ public class AI extends Board{
 
 
     public int getBestMove(){
+
+        if(memoize && this.difficulty < 7) this.difficulty = 7;
+
+        // Color the AI's text.
+        System.out.print("\u001b[32m");
+
+        // Check if the boards been memoized.
+        String boardAsString = Arrays.toString(super.board);
+        if(this.memoize)
+        {
+            int best = this.memoizer.getBestMove(boardAsString);
+            if(best != -1)
+            {
+                System.out.println("The AI recognized a pattern.");
+                return best;
+            }
+        }
+
 
         // Count the amount of zeros on the screen to know the turn of the game.
         int zeros = zeroSum();
@@ -71,21 +91,11 @@ public class AI extends Board{
 
         long startTime = System.currentTimeMillis();
 
-        // Color the AI's text.
-        System.out.print("\u001b[32m");
-
         // Variables to note AI attitude.
         boolean willWin = false;
         int averageLoss = 0;
         int lossCount = 0;
         int playerTraps = 0;
-
-
-        int baseDifficulty = this.difficulty + this.filledColumns();
-
-        // Get the order in which moves will be checked.
-        int[] checkOrder = getDistributionOrder();
-
 
         // Check to see whether the AI can win or must defend before making a standard move.
         for(int col = 0; col < super.WIDTH; col++)
@@ -107,11 +117,15 @@ public class AI extends Board{
             }
         }
 
+        // Get the order in which moves will be checked.
+        this.checkOrder = getDistributionOrder();
 
         // Loop over all possible moves and collect a list of moves which all have the same max value.
+        System.out.print("The AI is thinking");
         ArrayList<Integer> bestMoves = new ArrayList<>();
         int max = Short.MIN_VALUE;
-        System.out.print("Thinking");
+        int baseDifficulty = this.difficulty + this.filledColumns();
+        int[] lossList = new int[super.WIDTH];
         for(int i = 0; i < super.WIDTH; i++) {
 
             int col = checkOrder[i];
@@ -127,6 +141,7 @@ public class AI extends Board{
                         zeros
                 );
                 this.undoLastMove(col);
+                lossList[col] = loss;
 
                 // Update AI attitudes.
                 if(loss >= 100) willWin = true;
@@ -159,65 +174,93 @@ public class AI extends Board{
         else if(playerTraps >= 3) System.out.println("The AI is being very cautious.");
         else if(averageLoss <= -20) System.out.println("The AI trying to plan.");
 
-        this.emergencyComputations = playerTraps >= 3 || averageLoss <= -20;
+        // When in danger, increment recursive depth.
+        this.emergencyComputations = this.dynamicDifficulty && playerTraps >= 3 || averageLoss <= -20;
 
-        if(this.dynamicDifficulty)
+        // Limit recursive depth only to what is needed to cover the entire board.
+        if(this.difficulty > zeros) this.difficulty = zeros;
+        // If dynamic difficulty is enabled, increase difficulty when needed.
+        else if(this.dynamicDifficulty)
         {
             long elapsedTime = System.currentTimeMillis() - startTime;
-            if(elapsedTime <= 400 && this.difficulty >= 4)
+            if(elapsedTime <= 400 && this.difficulty >= 4 && super.board.length - zeros >= 8)
             {
-                // Difficulty should be gradually increased.
-                // Increase will be defined by 400 --> 2 and 100 --> 4.
-                // (400, 2) and (100, 4)
-                // Equation will follow y = mx + b.
-                // m = (2 - 4) / (400 - 100) = -1/150
-                // 2 = -400 / 150 + b --> b = 4 + 2/3
-                // y = 4 + 2/3 - x / 150
-                this.difficulty += (4.6666F - elapsedTime / 150);
+                this.difficulty += 2;
                 System.out.println("The AI is closing in.");
             }
             else if (elapsedTime <= 1000)   this.difficulty++;
             else if (elapsedTime >= 7500 && this.difficulty > 6) this.difficulty = 6;
             else if (elapsedTime >= 4000 && this.difficulty > 5) this.difficulty--;
-
         }
 
-//        System.out.println("ALL SEEING: " + (double) Math.min(this.difficulty, zeros) / zeros * 100 + " %");
+        double allSeeing = (double) Math.min(this.difficulty, zeros) / zeros;
+        if(allSeeing >= 1) System.out.println("The AI has reached zenith.");
+        allSeeing = Math.round(allSeeing * 10000) / 100.0;
+        System.out.println("AI intelligence: " + allSeeing + " %");
 
-        // Choose a random best move.
+        // Choose a random best move, if one is available.
+        // Otherwise, return just any index.
+        if(bestMoves.size() == 0)
+            for(int i : checkOrder)
+                if(this.colIsOpen(i))
+                    return i;
+
+        if(this.memoize)
+        {
+            // Before returning, store the best moves array.
+            memoizer.cacheBoard(boardAsString, Arrays.toString(lossList));
+        }
+
         return bestMoves.get((int)(Math.random() * bestMoves.size()));
 
     }
 
-    // TODO: add more comments to this method.
-    // Recursive decision-making.
+    // The heart of decision-making.
     public int minimax(boolean aiTurn, int countDown, int alpha, int beta, int zeros){
 
+        // If the game ends in a terminal-state OR max recursive depth is reached, evaluate the board.
         if (super.hasWon() || countDown == 0) return this.evaluateBoard(!aiTurn, zeros);
 
+        String boardAsString = Arrays.toString(super.board);
+        if(aiTurn && this.memoizer.dictionary.containsKey(boardAsString))
+        {
+            System.out.println(".");
+            return this.memoizer.getMinMax(boardAsString, aiTurn);
+        }
+
+        // Start minMax at a minimum or maximum value depending on whether it is the minimizing or maximizing turn.
         int minMax = aiTurn? Integer.MIN_VALUE + 1 : Integer.MAX_VALUE - 1;
-        for(int col = 0; col < super.WIDTH; col++)
+        // Loop though every available column and update minMax accordingly to new evaluations.
+        for(int i = 0; i < super.WIDTH; i++)
+        {
+            int col = checkOrder[i];
+            // Only check the move if you're able to place a coin there.
             if(super.colIsOpen(col))
             {
+                // Place a coin at the current column and get that boards evaluation.
+                // Un-place that coin after evaluating the board so not to damage the normal playing board.
                 super.placeCoin(col, (byte) (aiTurn? 2 : 1));
-                int loss = minimax(
+                int evaluation = minimax(
                         !aiTurn,
                         countDown - 1,
                         alpha, beta,
                         zeros - 1
                 );
-
-                minMax = aiTurn?
-                        Math.max(minMax, loss):
-                        Math.min(minMax, loss);
                 undoLastMove(col);
 
-                // Alpha-Beta pruning.
-                if(aiTurn) alpha = Math.max(alpha, loss);
-                else beta = Math.min(beta, loss);
-                if(beta <= alpha) break;
+                // Update minMax depending on whether it's the minimizing or maximizing turn.
+                minMax = aiTurn?
+                        Math.max(minMax, evaluation):
+                        Math.min(minMax, evaluation);
 
+                // Alpha-Beta pruning.
+                // If we know there's already a better option somewhere in the tree, there is no reason to take this one.
+                // This lets us avoid many unnecessary calculations.
+                if(aiTurn) alpha = Math.max(alpha, evaluation);
+                else beta = Math.min(beta, evaluation);
+                if(beta <= alpha) break;
             }
+        }
         return minMax;
 
     }
@@ -228,7 +271,7 @@ public class AI extends Board{
 
     // Evaluates and "scores" a games terminal-state.
     // This method is the heart of the AI, as it determines what it values and thus how it tries to win.
-    private int evaluateBoard(boolean aiTurn, int zeros) {
+    public int evaluateBoard(boolean aiTurn, int zeros) {
 
         int score = 0;
 
@@ -260,6 +303,7 @@ public class AI extends Board{
                 if (col >= 3) {
                     for (int offset = 0; offset < 4; offset++)
                     {
+                        // TODO: CHANGE TO BYTE ARRAY !!!!!!!!!
                         byte position = this.board[getIndex(row, col - offset)];
                         String value;
                         switch (position)
@@ -462,9 +506,6 @@ public class AI extends Board{
         return victory;
 
     }
-
-
-    // --------------------------------- //
 
 
 }
