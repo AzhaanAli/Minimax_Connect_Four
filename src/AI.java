@@ -18,15 +18,12 @@ public class AI extends Board{
     // Therefore, if there is a connection between the distribution of best moves and future best moves,
     // then this array can be used to prioritize checking certain columns before others,
     // pruning the decision-tree and resulting in much greater efficiency.
-    private final int[] bestMoveDistribution;
+    private int[] anticipatoryMoveWeight;
     private int[] checkOrder;
-
-    // Gives the AI the ability to temporarily increase its computational depth when in danger.
-    private boolean emergencyComputations = false;
 
     // Lets the AI increase its difficulty when it begins to compute a moves faster.
     // If a move takes more than 4 seconds to compute, the difficulty will decrement.
-    private boolean dynamicDifficulty;
+    private final boolean dynamicDifficulty;
 
     // This variable enables or disables memoization depending on its state.
     private final boolean memoize;
@@ -50,11 +47,10 @@ public class AI extends Board{
         super(height, width);
         this.difficulty = difficulty;
         this.PLAYER_CODE = (byte) 2;
-        this.bestMoveDistribution = new int[super.WIDTH];
+        this.anticipatoryMoveWeight = new int[super.WIDTH];
         this.dynamicDifficulty = true;
         this.memoize = difficulty >= 6 && height == 6 && width == 7;
         this.memoizer = memoize? new Memoizer() : null;
-
 
     }
 
@@ -68,6 +64,8 @@ public class AI extends Board{
         // Color the AI's text.
         System.out.print("\u001b[32m");
 
+        System.out.println("RECURSIVE DEPTH: " + this.difficulty);
+
         // Count the amount of zeros on the screen to know the turn of the game.
         int zeros = zeroSum();
 
@@ -78,7 +76,7 @@ public class AI extends Board{
         String boardAsString = Arrays.toString(super.board);
 
         // As minimax is expensive, check to see whether some best move exists before calling minimax.
-        int preMinimax = this.preMinimaxMoveFinding(boardAsString);
+        int preMinimax = this.preMinimaxMoveFinding(boardAsString, zeros);
         if(preMinimax != -1) return preMinimax;
 
         // Call minimax and store the fruit of the computers labor.
@@ -98,9 +96,11 @@ public class AI extends Board{
         if (super.hasWon() || countDown == 0) return this.evaluateBoard(!aiTurn, zeros);
 
         String boardAsString = Arrays.toString(super.board);
-        if(aiTurn && this.memoizer.dictionary.containsKey(boardAsString))
+        if(aiTurn && this.memoize && this.memoizer.dictionary.containsKey(boardAsString))
+        {
+            System.out.print("×");
             return this.memoizer.getMinMax(boardAsString, aiTurn);
-
+        }
 
         // Start minMax at a minimum or maximum value depending on whether it is the minimizing or maximizing turn.
         int minMax = aiTurn? Integer.MIN_VALUE + 1 : Integer.MAX_VALUE - 1;
@@ -144,17 +144,35 @@ public class AI extends Board{
     // Computation Methods.
 
     // The first half of best move finding which occurs before calling the minimax method.
-    public int preMinimaxMoveFinding(String boardAsString){
+    public int preMinimaxMoveFinding(String boardAsString, int zeros){
 
         // Check to see whether the AI can win or must defend before making a standard move.
         int winningColumn = this.canWin(this.PLAYER_CODE);
-        if(winningColumn != -1) return winningColumn;
-
+        if(winningColumn != -1)
+        {
+            System.out.println("AI is making the winning move.");
+            return winningColumn;
+        }
         int losingColumn = this.canWin((byte) 1);
-        if(losingColumn != -1) return losingColumn;
+        if(losingColumn != -1)
+        {
+            System.out.println("AI is on defense.");
+            return losingColumn;
+        }
 
         // Check if the boards been memoized.
-        return rememberBestMove(boardAsString);
+        int remembered = rememberBestMove(boardAsString);
+        if(remembered != -1)
+        {
+            System.out.println("AI recognized a pattern.");
+            return remembered;
+        }
+
+        // Get the order in which moves will be checked.
+        // This is necessary to use the getImmediateBestMove() method.
+        this.checkOrder = this.getDistributionOrder();
+
+        return this.getImmediateBestMove(zeros, 3);
 
     }
 
@@ -164,9 +182,6 @@ public class AI extends Board{
 
         // Log start time to compute and handle elapsed time after the loss list is discovered.
         long startTime = System.currentTimeMillis();
-
-        // Get the order in which moves will be checked.
-        this.checkOrder = getDistributionOrder();
 
         // Assign values to the best moves array and retrieve a "loss-list."
         // A loss list represents the loss evaluation for given moves.
@@ -204,14 +219,44 @@ public class AI extends Board{
     // --------------------------------- //
     // Lesser Computation Methods.
 
+    // Returns the column for some win assured move within a given recursive depth.
+    // The method returns the first winning path it finds.
+    // This method requires a pre-use of the getDistributionOrder() method.
+    public int getImmediateBestMove(int zeros, int depth){
+
+        for(int i = 0; i < super.WIDTH; i++) {
+
+            int col = checkOrder[i];
+
+            if (super.colIsOpen(col)) {
+
+                super.placeCoin(col, (byte) 2);
+                int loss = minimax(
+                        false,
+                        depth,
+                        Integer.MIN_VALUE,
+                        Integer.MAX_VALUE,
+                        zeros
+                );
+                this.undoLastMove(col);
+                if(loss >= 100)
+                {
+                    System.out.println("Defeat is imminent.");
+                    return col;
+                }
+
+            }
+        }
+
+        return -1;
+
+    }
+
     // If the AI remembers the best move for the given board, this method will return that move.
     // If not, then this method returns -1.
     public int rememberBestMove(String boardAsString){
 
-        // Check if the boards been memoized.
-        if(this.memoize)
-            return this.memoizer.getBestMove(boardAsString);
-        return -1;
+        return this.memoize? this.memoizer.getBestMove(boardAsString) : -1;
 
     }
 
@@ -219,7 +264,9 @@ public class AI extends Board{
     public double printAllSeeing(int zeros){
 
         double allSeeing = (double) Math.min(this.difficulty, zeros) / zeros;
+        if(allSeeing >= 1) System.out.println("The AI has reached zenith.");
         allSeeing = Math.round(allSeeing * 10000) / 100.0;
+        System.out.println("AI intelligence: " + allSeeing + " %");
         return allSeeing;
 
     }
@@ -243,7 +290,10 @@ public class AI extends Board{
 
         long elapsedTime = System.currentTimeMillis() - startTime;
         if(elapsedTime <= 400 && this.difficulty >= 4 && super.board.length - zeros >= 8)
+        {
             this.difficulty += 2;
+            System.out.println("The AI is closing in.");
+        }
         else if (elapsedTime <= 1000)   this.difficulty++;
         else if (elapsedTime >= 7500 && this.difficulty > 6) this.difficulty = 6;
         else if (elapsedTime >= 4000 && this.difficulty > 5) this.difficulty--;
@@ -259,6 +309,16 @@ public class AI extends Board{
     // A loss list represents the loss for each available move.
     public int[] getLossList(ArrayList<Integer> bestMoves, int zeros, double allSeeing){
 
+        return this.getLossList(
+                bestMoves,
+                zeros,
+                allSeeing,
+                this.difficulty + this.filledColumns()
+        );
+
+    }
+    public int[] getLossList(ArrayList<Integer> bestMoves, int zeros, double allSeeing, int depth){
+
         // Variables to note AI attitude.
         boolean willWin = false;
         int averageLoss = 0;
@@ -268,7 +328,6 @@ public class AI extends Board{
         // Loop over all possible moves and collect a list of moves which all have the same max value.
         System.out.print("The AI is thinking ");
         int max = Short.MIN_VALUE;
-        int baseDifficulty = this.difficulty + this.filledColumns();
         int[] lossList = new int[super.WIDTH];
         for(int i = 0; i < super.WIDTH; i++) {
 
@@ -279,7 +338,7 @@ public class AI extends Board{
                 super.placeCoin(col, (byte) 2);
                 int loss = minimax(
                         false,
-                        emergencyComputations? Math.max(baseDifficulty, 7) : baseDifficulty,
+                        depth,
                         Integer.MIN_VALUE,
                         Integer.MAX_VALUE,
                         zeros
@@ -309,10 +368,14 @@ public class AI extends Board{
         }
 
         // Update best move distribution array.
-        for(int col : bestMoves) bestMoveDistribution[col]++;
+        this.getWinningTotals(zeros);
 
-        // When in danger, increment recursive depth.
-        this.emergencyComputations = this.dynamicDifficulty && playerTraps >= 3 || averageLoss <= -20;
+        // Interpret attitude variables.
+        System.out.println();
+        if(lossCount != 0) averageLoss /= lossCount;
+        if (willWin) System.out.println("The AI has formulated a plan.");
+        else if(playerTraps >= 3) System.out.println(allSeeing == 1? "The AI accepts its defeat." : "The AI is being very cautious.");
+        else if(averageLoss <= -20) System.out.println("The AI trying to plan.");
 
         return lossList;
 
@@ -482,6 +545,29 @@ public class AI extends Board{
     // --------------------------------- //
     // Helper Methods.
 
+    // Totals up the amount of winning opportunities available on each column.
+    private void getWinningTotals(int zeros){
+
+        final byte COIN = 2;
+        this.anticipatoryMoveWeight = new int[super.WIDTH];
+
+        for(int col = 0; col < super.WIDTH; col++)
+            if(super.colIsOpen(col))
+            {
+                // Place a coin.
+                super.placeCoin(col, COIN);
+
+                // Evaluate the board.
+                // If the board results in a win, then increment the total at that column.
+                anticipatoryMoveWeight[col] += this.evaluateBoard(true, zeros);
+
+                // Undo the coin.
+                this.undoLastMove(col);
+            }
+
+
+    }
+
     // Undoes the last move done on a column.
     private void undoLastMove(int col){
 
@@ -532,12 +618,12 @@ public class AI extends Board{
             identities[i] = i;
 
         // Bubble sort.
-        for (int n = 0; n < this.bestMoveDistribution.length; n++)
-            for (int j = 0; j < this.bestMoveDistribution.length - n - 1; j++)
-                if (this.bestMoveDistribution[j] < this.bestMoveDistribution[j + 1]) {
-                    int swapString = this.bestMoveDistribution[j];
-                    this.bestMoveDistribution[j] = this.bestMoveDistribution[j + 1];
-                    this.bestMoveDistribution[j + 1] = swapString;
+        for (int n = 0; n < this.anticipatoryMoveWeight.length; n++)
+            for (int j = 0; j < this.anticipatoryMoveWeight.length - n - 1; j++)
+                if (this.anticipatoryMoveWeight[j] < this.anticipatoryMoveWeight[j + 1]) {
+                    int swapString = this.anticipatoryMoveWeight[j];
+                    this.anticipatoryMoveWeight[j] = this.anticipatoryMoveWeight[j + 1];
+                    this.anticipatoryMoveWeight[j + 1] = swapString;
                     int swapInt = identities[j];
                     identities[j] = identities[j + 1];
                     identities[j + 1] = swapInt;
