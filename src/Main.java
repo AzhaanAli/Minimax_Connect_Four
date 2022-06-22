@@ -58,6 +58,39 @@ public class Main {
 
     }
 
+    public static void randomTraining(int boardHeight, int boardWidth, int aiRecursiveDepth, boolean startFirst){
+
+        AI ai = new AI(boardHeight, boardWidth, aiRecursiveDepth);
+
+        ai.print();
+
+        while(!ai.hasWon() && ai.zeroSum() != 0)
+        {
+            if(startFirst)
+            {
+                int col = -1;
+                while(!ai.colIsOpen(col))
+                {
+                    col = (int) (7 * Math.random());
+                }
+                ai.placeCoin(col, (byte) 1);
+//                ai.promptUserTurn();
+            }
+            else ai.placeCoin(ai.getBestMove(), (byte) 2);
+            System.out.println("\u001B[0m\n");
+
+            ai.print();
+            startFirst = !startFirst;
+        }
+
+        System.out.println("\u001b[32m");
+        if(ai.zeroSum() == 0) System.out.println("Game has ended in a draw.");
+        else System.out.println("\n" + (startFirst? "Ai" : "Player") + " has won!");
+        System.out.print("\u001B[0m\n");
+
+
+    }
+
     public static void gameLoop(){
 
         Scanner s = new Scanner(System.in);
