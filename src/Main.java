@@ -10,7 +10,6 @@ public class Main {
 
         startGame(6, 7, 7);
 
-
     }
 
 
@@ -44,8 +43,13 @@ public class Main {
         while(!ai.hasWon() && ai.zeroSum() != 0)
         {
             if(startFirst) ai.promptUserTurn();
-            else ai.placeCoin(ai.getBestMove(), (byte) 2);
-            System.out.println("\u001B[0m\n");
+            else
+            {
+                int bestMove = ai.getBestMove();
+                ai.placeCoin(bestMove, (byte) 2);
+                System.out.println("\nAI placed a coin on column " + (bestMove + 1) + ".");
+                System.out.println("\u001B[0m");
+            }
 
             ai.print();
             startFirst = !startFirst;
