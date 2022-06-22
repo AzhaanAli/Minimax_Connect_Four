@@ -18,7 +18,7 @@ public class AI extends Board{
     // Therefore, if there is a connection between the distribution of best moves and future best moves,
     // then this array can be used to prioritize checking certain columns before others,
     // pruning the decision-tree and resulting in much greater efficiency.
-    private final int[] bestMoveDistribution;
+    private int[] anticipatoryMoveWeight;
     private int[] checkOrder;
 
     // Gives the AI the ability to temporarily increase its computational depth when in danger.
@@ -50,11 +50,10 @@ public class AI extends Board{
         super(height, width);
         this.difficulty = difficulty;
         this.PLAYER_CODE = (byte) 2;
-        this.bestMoveDistribution = new int[super.WIDTH];
+        this.anticipatoryMoveWeight = new int[super.WIDTH];
         this.dynamicDifficulty = true;
         this.memoize = difficulty >= 6 && height == 6 && width == 7;
         this.memoizer = memoize? new Memoizer() : null;
-
 
     }
 
@@ -67,6 +66,8 @@ public class AI extends Board{
 
         // Color the AI's text.
         System.out.print("\u001b[32m");
+
+        System.out.println("RECURSIVE DEPTH: " + this.difficulty);
 
         // Count the amount of zeros on the screen to know the turn of the game.
         int zeros = zeroSum();
@@ -98,7 +99,7 @@ public class AI extends Board{
         if (super.hasWon() || countDown == 0) return this.evaluateBoard(!aiTurn, zeros);
 
         String boardAsString = Arrays.toString(super.board);
-        if(aiTurn && this.memoizer.dictionary.containsKey(boardAsString))
+        if(aiTurn && this.memoize && this.memoizer.dictionary.containsKey(boardAsString))
         {
             System.out.print("×");
             return this.memoizer.getMinMax(boardAsString, aiTurn);
@@ -330,7 +331,7 @@ public class AI extends Board{
         }
 
         // Update best move distribution array.
-        for(int col : bestMoves) bestMoveDistribution[col]++;
+        this.getWinningTotals(zeros);
 
         // Interpret attitude variables.
         System.out.println();
@@ -510,6 +511,29 @@ public class AI extends Board{
     // --------------------------------- //
     // Helper Methods.
 
+    // Totals up the amount of winning opportunities available on each column.
+    private void getWinningTotals(int zeros){
+
+        final byte COIN = 2;
+        this.anticipatoryMoveWeight = new int[super.WIDTH];
+
+        for(int col = 0; col < super.WIDTH; col++)
+            if(super.colIsOpen(col))
+            {
+                // Place a coin.
+                super.placeCoin(col, COIN);
+
+                // Evaluate the board.
+                // If the board results in a win, then increment the total at that column.
+                anticipatoryMoveWeight[col] += this.evaluateBoard(true, zeros);
+
+                // Undo the coin.
+                this.undoLastMove(col);
+            }
+
+
+    }
+
     // Undoes the last move done on a column.
     private void undoLastMove(int col){
 
@@ -560,12 +584,12 @@ public class AI extends Board{
             identities[i] = i;
 
         // Bubble sort.
-        for (int n = 0; n < this.bestMoveDistribution.length; n++)
-            for (int j = 0; j < this.bestMoveDistribution.length - n - 1; j++)
-                if (this.bestMoveDistribution[j] < this.bestMoveDistribution[j + 1]) {
-                    int swapString = this.bestMoveDistribution[j];
-                    this.bestMoveDistribution[j] = this.bestMoveDistribution[j + 1];
-                    this.bestMoveDistribution[j + 1] = swapString;
+        for (int n = 0; n < this.anticipatoryMoveWeight.length; n++)
+            for (int j = 0; j < this.anticipatoryMoveWeight.length - n - 1; j++)
+                if (this.anticipatoryMoveWeight[j] < this.anticipatoryMoveWeight[j + 1]) {
+                    int swapString = this.anticipatoryMoveWeight[j];
+                    this.anticipatoryMoveWeight[j] = this.anticipatoryMoveWeight[j + 1];
+                    this.anticipatoryMoveWeight[j + 1] = swapString;
                     int swapInt = identities[j];
                     identities[j] = identities[j + 1];
                     identities[j + 1] = swapInt;
