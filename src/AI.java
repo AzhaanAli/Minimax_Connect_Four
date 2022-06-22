@@ -64,13 +64,11 @@ public class AI extends Board{
         // Color the AI's text.
         System.out.print("\u001b[32m");
 
-        System.out.println("RECURSIVE DEPTH: " + this.difficulty);
-
         // Count the amount of zeros on the screen to know the turn of the game.
         int zeros = zeroSum();
 
         // Print and retrieve the all seeing values.
-        double allSeeing = printAllSeeing(zeros);
+        double allSeeing = getAllSeeing(zeros);
 
         // Store a string representation of the board for memoization functions.
         String boardAsString = Arrays.toString(super.board);
@@ -97,10 +95,7 @@ public class AI extends Board{
 
         String boardAsString = Arrays.toString(super.board);
         if(aiTurn && this.memoize && this.memoizer.dictionary.containsKey(boardAsString))
-        {
-            System.out.print("×");
             return this.memoizer.getMinMax(boardAsString, aiTurn);
-        }
 
         // Start minMax at a minimum or maximum value depending on whether it is the minimizing or maximizing turn.
         int minMax = aiTurn? Integer.MIN_VALUE + 1 : Integer.MAX_VALUE - 1;
@@ -148,25 +143,13 @@ public class AI extends Board{
 
         // Check to see whether the AI can win or must defend before making a standard move.
         int winningColumn = this.canWin(this.PLAYER_CODE);
-        if(winningColumn != -1)
-        {
-            System.out.println("AI is making the winning move.");
-            return winningColumn;
-        }
+        if(winningColumn != -1) return winningColumn;
         int losingColumn = this.canWin((byte) 1);
-        if(losingColumn != -1)
-        {
-            System.out.println("AI is on defense.");
-            return losingColumn;
-        }
+        if(losingColumn != -1) return losingColumn;
 
         // Check if the boards been memoized.
         int remembered = rememberBestMove(boardAsString);
-        if(remembered != -1)
-        {
-            System.out.println("AI recognized a pattern.");
-            return remembered;
-        }
+        if(remembered != -1) return remembered;
 
         // Get the order in which moves will be checked.
         // This is necessary to use the getImmediateBestMove() method.
@@ -186,7 +169,7 @@ public class AI extends Board{
         // Assign values to the best moves array and retrieve a "loss-list."
         // A loss list represents the loss evaluation for given moves.
         // The best moves array holds the indices of the best possible moves to make for the given board state.
-        int[] lossList = this.getLossList(bestMoves, zeros, allSeeing);
+        int[] lossList = this.getLossList(bestMoves, zeros);
 
         // Adjust recursive depth to match how long the previous turn took.
         if(this.dynamicDifficulty) this.doDynamicDifficulty(zeros, startTime);
@@ -239,11 +222,7 @@ public class AI extends Board{
                         zeros
                 );
                 this.undoLastMove(col);
-                if(loss >= 100)
-                {
-                    System.out.println("Defeat is imminent.");
-                    return col;
-                }
+                if(loss >= 100) return col;
 
             }
         }
@@ -261,12 +240,10 @@ public class AI extends Board{
     }
 
     // Prints an interpretation of the all seeing value and returns it.
-    public double printAllSeeing(int zeros){
+    public double getAllSeeing(int zeros){
 
         double allSeeing = (double) Math.min(this.difficulty, zeros) / zeros;
-        if(allSeeing >= 1) System.out.println("The AI has reached zenith.");
         allSeeing = Math.round(allSeeing * 10000) / 100.0;
-        System.out.println("AI intelligence: " + allSeeing + " %");
         return allSeeing;
 
     }
@@ -290,10 +267,7 @@ public class AI extends Board{
 
         long elapsedTime = System.currentTimeMillis() - startTime;
         if(elapsedTime <= 400 && this.difficulty >= 4 && super.board.length - zeros >= 8)
-        {
             this.difficulty += 2;
-            System.out.println("The AI is closing in.");
-        }
         else if (elapsedTime <= 1000)   this.difficulty++;
         else if (elapsedTime >= 7500 && this.difficulty > 6) this.difficulty = 6;
         else if (elapsedTime >= 4000 && this.difficulty > 5) this.difficulty--;
@@ -307,23 +281,16 @@ public class AI extends Board{
 
     // Retrieves a loss list for the current board state.
     // A loss list represents the loss for each available move.
-    public int[] getLossList(ArrayList<Integer> bestMoves, int zeros, double allSeeing){
+    public int[] getLossList(ArrayList<Integer> bestMoves, int zeros){
 
         return this.getLossList(
                 bestMoves,
                 zeros,
-                allSeeing,
                 this.difficulty + this.filledColumns()
         );
 
     }
-    public int[] getLossList(ArrayList<Integer> bestMoves, int zeros, double allSeeing, int depth){
-
-        // Variables to note AI attitude.
-        boolean willWin = false;
-        int averageLoss = 0;
-        int lossCount = 0;
-        int playerTraps = 0;
+    public int[] getLossList(ArrayList<Integer> bestMoves, int zeros, int depth){
 
         // Loop over all possible moves and collect a list of moves which all have the same max value.
         System.out.print("The AI is thinking ");
@@ -346,15 +313,6 @@ public class AI extends Board{
                 this.undoLastMove(col);
                 lossList[col] = loss;
 
-                // Update AI attitudes.
-                if(loss >= 100) willWin = true;
-                else if(loss <= -100) playerTraps++;
-                else
-                {
-                    averageLoss += loss;
-                    lossCount++;
-                }
-
                 System.out.print("•");
 
                 if (loss > max)
@@ -372,10 +330,6 @@ public class AI extends Board{
 
         // Interpret attitude variables.
         System.out.println();
-        if(lossCount != 0) averageLoss /= lossCount;
-        if (willWin) System.out.println("The AI has formulated a plan.");
-        else if(playerTraps >= 3) System.out.println(allSeeing == 1? "The AI accepts its defeat." : "The AI is being very cautious.");
-        else if(averageLoss <= -20) System.out.println("The AI trying to plan.");
 
         return lossList;
 
