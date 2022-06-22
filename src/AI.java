@@ -60,7 +60,7 @@ public class AI extends Board{
 
 
     // --------------------------------- //
-    // Methods.
+    // Extremely important methods.
 
     // Returns what the AI believes is the safest move to make to inch toward victory.
     public int getBestMove(){
@@ -74,57 +74,19 @@ public class AI extends Board{
         // Print and retrieve the all seeing values.
         double allSeeing = printAllSeeing(zeros);
 
-        // Check to see whether the AI can win or must defend before making a standard move.
-        int winningColumn = this.canWin(this.PLAYER_CODE);
-        if(winningColumn != -1)
-        {
-            System.out.println("AI is making the winning move.");
-            return winningColumn;
-        }
-        int losingColumn = this.canWin((byte) 1);
-        if(losingColumn != -1)
-        {
-            System.out.println("AI is on defense.");
-            return losingColumn;
-        }
-
-        // Check if the boards been memoized.
+        // Store a string representation of the board for memoization functions.
         String boardAsString = Arrays.toString(super.board);
-        int remembered = rememberBestMove(boardAsString);
-        if(remembered != -1) return remembered;
 
-        // Log start time to compute and handle elapsed time after the loss list is discovered.
-        long startTime = System.currentTimeMillis();
+        // As minimax is expensive, check to see whether some best move exists before calling minimax.
+        int preMinimax = this.preMinimaxMoveFinding(boardAsString);
+        if(preMinimax != -1) return preMinimax;
 
-        // Get the order in which moves will be checked.
-        this.checkOrder = getDistributionOrder();
-
-        // Assign values to the best moves array and retrieve a "loss-list."
-        // A loss list represents the loss evaluation for given moves.
-        // The best moves array holds the indices of the best possible moves to make for the given board state.
+        // Call minimax and store the fruit of the computers labor.
         ArrayList<Integer> bestMoves = new ArrayList<>();
-        int[] lossList = this.getLossList(bestMoves, zeros, allSeeing);
+        int[] lossList = this.minimaxMoveFinding(bestMoves, zeros, allSeeing);
 
-        // Adjust recursive depth to match how long the previous turn took.
-        if(this.dynamicDifficulty) this.doDynamicDifficulty(zeros, startTime);
-
-        // Limit recursive depth only to what is needed to cover the entire board.
-        // This means that if recursive is greater than the amount of zeros on the board, then depth
-        // should be readjusted to the amount of zeros on the board.
-        this.difficulty = Math.min(this.difficulty, zeros);
-
-        // If best moves is somehow empty, then choose the first available move.
-        if(bestMoves.size() == 0)
-            for(int i : checkOrder)
-                if(this.colIsOpen(i))
-                    return i;
-
-        // If the recursive depth of the greater than 7, a turn is fit to be cached and can be memoized.
-        else if(this.memoize && this.difficulty >= 7)
-            memoizer.cacheBoard(boardAsString, Arrays.toString(lossList));
-
-        // Choose a random column from within the best moves array.
-        return bestMoves.get((int)(Math.random() * bestMoves.size()));
+        // Process that fruit into the sweet delicious best move jam that the AI will beat you up with.
+        return this.postMinimaxMoveFinding(bestMoves, lossList, boardAsString);
 
 
     }
@@ -176,6 +138,74 @@ public class AI extends Board{
             }
         }
         return minMax;
+
+    }
+
+
+    // --------------------------------- //
+    // Computation Methods.
+
+    // The first half of best move finding which occurs before calling the minimax method.
+    public int preMinimaxMoveFinding(String boardAsString){
+
+        // Check to see whether the AI can win or must defend before making a standard move.
+        int winningColumn = this.canWin(this.PLAYER_CODE);
+        if(winningColumn != -1)
+        {
+            System.out.println("AI is making the winning move.");
+            return winningColumn;
+        }
+        int losingColumn = this.canWin((byte) 1);
+        if(losingColumn != -1)
+        {
+            System.out.println("AI is on defense.");
+            return losingColumn;
+        }
+
+        // Check if the boards been memoized.
+        return rememberBestMove(boardAsString);
+
+    }
+
+    // Returns a raw result from the minimax method.
+    // The method also updates instance variables accordingly to circumstance.
+    public int[] minimaxMoveFinding(ArrayList<Integer> bestMoves, int zeros, double allSeeing){
+
+        // Log start time to compute and handle elapsed time after the loss list is discovered.
+        long startTime = System.currentTimeMillis();
+
+        // Get the order in which moves will be checked.
+        this.checkOrder = getDistributionOrder();
+
+        // Assign values to the best moves array and retrieve a "loss-list."
+        // A loss list represents the loss evaluation for given moves.
+        // The best moves array holds the indices of the best possible moves to make for the given board state.
+        int[] lossList = this.getLossList(bestMoves, zeros, allSeeing);
+
+        // Adjust recursive depth to match how long the previous turn took.
+        if(this.dynamicDifficulty) this.doDynamicDifficulty(zeros, startTime);
+
+        // Pass back the loss list.
+        return lossList;
+
+    }
+
+    // Processes the raw result of the minimaxMoveFinding() method into some best move.
+    // The method also caches the result of the move, so it need not be computed again in the future.
+    public int postMinimaxMoveFinding(ArrayList<Integer> bestMoves, int[] lossList, String boardAsString){
+
+        // If best moves is somehow empty, then choose the first available move.
+        if(bestMoves.size() == 0)
+            for(int i : checkOrder)
+                if(this.colIsOpen(i))
+                    return i;
+
+        // If the recursive depth of the greater than 7, a turn is fit to be cached and can be memoized.
+        if(this.memoize && this.difficulty >= 7)
+            memoizer.cacheBoard(boardAsString, Arrays.toString(lossList));
+
+        // Choose a random column from within the best moves array.
+        return bestMoves.get((int)(Math.random() * bestMoves.size()));
 
     }
 
@@ -238,6 +268,11 @@ public class AI extends Board{
         else if (elapsedTime <= 1000)   this.difficulty++;
         else if (elapsedTime >= 7500 && this.difficulty > 6) this.difficulty = 6;
         else if (elapsedTime >= 4000 && this.difficulty > 5) this.difficulty--;
+
+        // Limit recursive depth only to what is needed to cover the entire board.
+        // This means that if recursive is greater than the amount of zeros on the board, then depth
+        // should be readjusted to the amount of zeros on the board.
+        this.difficulty = Math.min(this.difficulty, zeros);
 
     }
 
