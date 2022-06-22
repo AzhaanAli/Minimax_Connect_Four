@@ -99,10 +99,8 @@ public class AI extends Board{
 
         String boardAsString = Arrays.toString(super.board);
         if(aiTurn && this.memoizer.dictionary.containsKey(boardAsString))
-        {
-            System.out.print("×");
             return this.memoizer.getMinMax(boardAsString, aiTurn);
-        }
+
 
         // Start minMax at a minimum or maximum value depending on whether it is the minimizing or maximizing turn.
         int minMax = aiTurn? Integer.MIN_VALUE + 1 : Integer.MAX_VALUE - 1;
@@ -150,17 +148,10 @@ public class AI extends Board{
 
         // Check to see whether the AI can win or must defend before making a standard move.
         int winningColumn = this.canWin(this.PLAYER_CODE);
-        if(winningColumn != -1)
-        {
-            System.out.println("AI is making the winning move.");
-            return winningColumn;
-        }
+        if(winningColumn != -1) return winningColumn;
+
         int losingColumn = this.canWin((byte) 1);
-        if(losingColumn != -1)
-        {
-            System.out.println("AI is on defense.");
-            return losingColumn;
-        }
+        if(losingColumn != -1) return losingColumn;
 
         // Check if the boards been memoized.
         return rememberBestMove(boardAsString);
@@ -219,14 +210,7 @@ public class AI extends Board{
 
         // Check if the boards been memoized.
         if(this.memoize)
-        {
-            int best = this.memoizer.getBestMove(boardAsString);
-            if(best != -1)
-            {
-                System.out.println("The AI recognized a pattern.");
-                return best;
-            }
-        }
+            return this.memoizer.getBestMove(boardAsString);
         return -1;
 
     }
@@ -235,9 +219,7 @@ public class AI extends Board{
     public double printAllSeeing(int zeros){
 
         double allSeeing = (double) Math.min(this.difficulty, zeros) / zeros;
-        if(allSeeing >= 1) System.out.println("The AI has reached zenith.");
         allSeeing = Math.round(allSeeing * 10000) / 100.0;
-        System.out.println("AI intelligence: " + allSeeing + " %");
         return allSeeing;
 
     }
@@ -261,10 +243,7 @@ public class AI extends Board{
 
         long elapsedTime = System.currentTimeMillis() - startTime;
         if(elapsedTime <= 400 && this.difficulty >= 4 && super.board.length - zeros >= 8)
-        {
             this.difficulty += 2;
-            System.out.println("The AI is closing in.");
-        }
         else if (elapsedTime <= 1000)   this.difficulty++;
         else if (elapsedTime >= 7500 && this.difficulty > 6) this.difficulty = 6;
         else if (elapsedTime >= 4000 && this.difficulty > 5) this.difficulty--;
@@ -331,13 +310,6 @@ public class AI extends Board{
 
         // Update best move distribution array.
         for(int col : bestMoves) bestMoveDistribution[col]++;
-
-        // Interpret attitude variables.
-        System.out.println();
-        if(lossCount != 0) averageLoss /= lossCount;
-        if (willWin) System.out.println("The AI has formulated a plan.");
-        else if(playerTraps >= 3) System.out.println(allSeeing == 1? "The AI accepts its defeat." : "The AI is being very cautious.");
-        else if(averageLoss <= -20) System.out.println("The AI trying to plan.");
 
         // When in danger, increment recursive depth.
         this.emergencyComputations = this.dynamicDifficulty && playerTraps >= 3 || averageLoss <= -20;
